@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Studio Gibbles - About</title>
+<meta name="description" content="Studio Gibbles is a tiny independent studio named after Gatsby the poodle. We're pouring everything we have into our first game, Into the Storm.">
+<link rel="icon" href="/assets/favicon.svg">
+<link rel="canonical" href="https://studiogibbles.com/about/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Studio Gibbles - About">
+<meta property="og:description" content="A tiny independent studio named after a very good poodle.">
+<meta property="og:image" content="/assets/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/styles.css">
+<style>
+.storyGrid{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center;padding:90px 0}
+.storyGrid h2{font-family:var(--font-head);font-size:22px;line-height:1.4;color:#c7e8dc;letter-spacing:.02em;margin:14px 0 18px}
+.storyGrid .label{font-size:11px}
+.storyGrid p{color:var(--ink);font-size:20px;line-height:1.5;margin-bottom:16px}
+.storyGrid p b{color:var(--ink)}
+.gibbles{aspect-ratio:1;background:var(--panel);border:2px solid var(--line);position:relative;display:grid;place-items:center;overflow:hidden}
+.gibbles .stripes{position:absolute;inset:0;background:repeating-linear-gradient(45deg,var(--panel2) 0 14px,var(--panel) 14px 28px)}
+.gibbles .gibblesPhoto{position:relative;display:block;width:100%;height:100%;object-fit:contain}
+.gibbles .ph{position:relative;text-align:center}
+.gibbles .paw{font-size:80px}
+.gibbles .cap{font-family:var(--font-head);font-size:13px;color:var(--cyan);margin-top:8px;letter-spacing:.06em}
+.gibbles .brk{position:absolute;width:20px;height:20px;border:3px solid var(--cyan-dim)}
+.gibbles .tl{top:14px;left:14px;border-right:0;border-bottom:0}.gibbles .br{bottom:14px;right:14px;border-left:0;border-top:0}
+.values{background:var(--bg2);border-top:2px solid var(--line);border-bottom:2px solid var(--line);padding:90px 0}
+.team{padding:40px 0}
+.tgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
+.member{text-align:center}
+.member .team-link{display:block;color:inherit;text-decoration:none}
+.member .pfp{aspect-ratio:1692 / 2100;background:var(--panel) center/cover no-repeat;border:2px solid var(--line);display:grid;place-items:center;font-size:34px;color:var(--cyan-dim)}
+.member h4{font-family:var(--font-head);font-weight:400;font-size:14px;line-height:1.4;color:#c7e8dc;letter-spacing:.02em;margin-top:18px}
+.member span{font-family:var(--font-head);font-size:9px;color:var(--muted);letter-spacing:.14em}
+.artists{padding:70px 0;background:var(--bg2);border-top:2px solid var(--line);border-bottom:2px solid var(--line)}
+.artistIntro{color:var(--ink);max-width:720px;font-size:20px;line-height:1.55;margin:-20px 0 30px}
+.artistCredits{display:grid;grid-template-columns:repeat(2,1fr);gap:14px 28px}
+.artistCredit{display:block;padding:18px 20px;background:var(--panel);border:2px solid var(--line);color:var(--muted);line-height:1.5;text-decoration:none;transition:transform .12s ease,border-color .12s ease,background .12s ease,box-shadow .12s ease}
+.artistCredit:hover{color:var(--ink);background:var(--panel2);border-color:var(--cyan);box-shadow:5px 5px 0 rgba(0,0,0,.45),0 0 20px rgba(143,220,200,.14);transform:translate(-3px,-3px)}
+.artistCredit:focus-visible{color:var(--ink);border-color:var(--cyan);box-shadow:0 0 0 3px var(--bg),0 0 0 6px var(--cyan)}
+.artistCardLink{display:block;color:inherit;text-decoration:none}
+.artistCredit .artistName{font-family:var(--font-head);font-weight:400;font-size:13px;line-height:1.5;letter-spacing:.02em;display:inline-block;margin-bottom:4px}
+.artistCredit .chierit{color:var(--cyan)}
+.artistCredit .otsoga{color:var(--gold)}
+.artistCredit .kbpixelart{color:var(--violet)}
+.artistCredit .untiedgames{color:#e88f8f}
+.artistCredit .alejandro{color:#d7a6e8}
+.artistCredit .szadiart{color:#8ed8c4}
+.artistStudio{display:block;margin-top:8px;font-family:var(--font-body);font-size:19px;font-style:italic;color:var(--muted)}
+.artistStudioLink{color:#76b7aa;text-decoration:underline;text-underline-offset:3px}
+.artistMore{color:var(--ink);font-style:italic;margin-top:24px}
+.aboutLabel{color:var(--cyan)}
+.ctaSec{padding:50px 0;text-align:center}
+.ctaBox{background:linear-gradient(135deg,var(--panel2),var(--panel));border:2px solid var(--gold-dim);padding:64px}
+.ctaBox h2{font-family:var(--font-head);font-weight:400;color:#c7e8dc;letter-spacing:.02em;font-size:22px;line-height:1.4;margin:14px 0}
+.ctaBox p{color:var(--ink);max-width:520px;margin:0 auto 30px;font-size:20px;line-height:1.5}
+@media(max-width:900px){.storyGrid,.tgrid{grid-template-columns:1fr 1fr}}
+@media(max-width:560px){.storyGrid,.tgrid,.artistCredits{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-nav">
+  <a class="brand" href="/" aria-label="Studio Gibbles home"><span class="mark"><span>SG</span></span><span><b>STUDIO GIBBLES</b><small>Into the Storm</small></span></a>
+  <button class="navtoggle" aria-expanded="false" aria-controls="nav">Menu</button>
+  <nav class="navlinks" id="nav" aria-label="Primary">
+    <a href="/">Into the Storm</a><a href="/about/" aria-current="page">About</a><a href="/newsletter/">Newsletter</a><a href="/press/">Press</a><a class="navwish" href="#"><span>◆ Wishlist</span><small class="soon">(coming soon)</small></a>
+  </nav>
+</header>
+
+<main id="main">
+<section class="phero"><div class="glow"></div><div class="wrap">
+  <span class="label aboutLabel">// Who we are</span>
+  <p>An independent team making the games we want to play, led (unofficially) by a very opinionated poodle.</p>
+</div></section>
+
+<section class="wrap"><div class="storyGrid">
+  <div>
+    <span class="label aboutLabel">// Origin</span>
+    <h2 class="cinzel">Gibbles?</h2>
+    <p><b>Gibbles</b> is one of the many pet names for our poodle-boy <b><i>Gatsby</i></b>: a beautiful dog, chief morale officer, and official studio mascot.
+    <p>We're a small, new team working on our debut game: <b>Into the Storm</b>. </p>
+    <p class="mono" style="color:var(--cyan);font-size:19px">→ studiogibbles.com</p>
+  </div>
+  <div class="gibbles"><div class="stripes"></div><div class="brk tl"></div><div class="brk br"></div><img class="gibblesPhoto" src="/assets/img/Team HS/gibbles2.jpg" alt="Gibbles"></div>
+</div></section>
+
+<section class="team"><div class="wrap">
+  <div class="head"><span class="label aboutLabel">// The Team</span><h2 class="cinzel">Three humans, one poodle</h2></div>
+  <div class="tgrid">
+    <div class="member"><div class="pfp" style="background-image:url('/assets/img/Team HS/will and gibbles.png')"></div><h4>William Dooling</h4><span>Director &amp; Game Designer</span></div>
+    <div class="member"><a class="team-link" href="https://www.teareneemusic.com/" target="_blank" rel="noopener noreferrer"><div class="pfp" style="background-image:url('/assets/img/Team HS/Tea no gibbles.png')"></div><h4>Téa Renee</h4></a><span>Composer</span></div>
+    <div class="member"><a class="team-link" href="https://a.co/d/09JBICiu" target="_blank" rel="noopener noreferrer"><div class="pfp" style="background-image:url('/assets/img/Team HS/Nicole and Gibbles.png')"></div><h4>Nicole Zehner</h4></a><span>Writer</span></div>
+    <div class="member"><div class="pfp" style="background-image:url('/assets/img/Team HS/Gibbles.png')"></div><h4>Gatsby</h4><span>Chief Morale Officer</span></div>
+  </div>
+</div></section>
+
+<section class="artists"><div class="wrap">
+  <div class="head"><span class="label aboutLabel">// The Artists</span><h2 class="cinzel">Built with borrowed magic</h2></div>
+  <p class="artistIntro">This world isn't ours alone. We found most of these artists through itch.io, and their work shaped it as much as ours did.</p>
+  <div class="artistCredits">
+    <a class="artistCredit" href="https://chierit.itch.io/" target="_blank" rel="noopener noreferrer"><span class="artistName chierit">Chierit:</span> Gatsby's wolf form! Plus the Tank, Ranger, and a bunch of other enemies</a>
+    <div class="artistCredit"><a class="artistCardLink" href="https://www.alejdark.com/#" target="_blank" rel="noopener noreferrer"><span class="artistName alejandro">Alejdark:</span> The stunning cover art </a><span class="artistStudio">from <a class="artistStudioLink" href="https://redpotionstudios.net/" target="_blank" rel="noopener noreferrer">Red Potion Studios</a></span></div>
+    <a class="artistCredit" href="https://otsoga.itch.io/" target="_blank" rel="noopener noreferrer"><span class="artistName otsoga">Otsoga:</span> Zarah, and a lot of what tries to kill her</a>
+    <a class="artistCredit" href="https://untiedgames.itch.io/" target="_blank" rel="noopener noreferrer"><span class="artistName untiedgames">Untied Games:</span> The VFX that makes everything hit harder</a>
+    <a class="artistCredit" href="https://www.patreon.com/cw/KBPixelArt" target="_blank" rel="noopener noreferrer"><span class="artistName kbpixelart">KBPixelArt:</span> Most of the world you'll meet along the way</a>
+    <a class="artistCredit" href="https://szadiart.itch.io/" target="_blank" rel="noopener noreferrer"><span class="artistName szadiart">Szadiart:</span> The backgrounds you get lost in</a>
+  </div>
+  <p class="artistMore">And so many more. Thank you for helping make this world feel alive.</p>
+</div></section>
+
+<section class="ctaSec"><div class="wrap"><div class="ctaBox">
+  <span class="label aboutLabel">// Follow along</span>
+  <h2 class="cinzel">Save your spot in the beta!</h2>
+  <p>Join the newsletter and be first in line when the beta opens.</p>
+  <a class="pxbtn" href="https://wgd-ysrqup.subscribepage.io/" target="_blank" rel="noopener noreferrer">◆ Join the newsletter</a>
+</div></div></section>
+</main>
+
+<footer class="site-footer"><div class="wrap">
+  <div class="fgrid">
+    <div class="fcol"><h5>GAME</h5><a class="stub" href="/#main">Features</a><a href="/">Characters</a><a class="stub" href="#">Wishlist</a><a class="stub" href="#">Demo</a></div>
+    <div class="fcol"><h5>STUDIO</h5><a href="/about/">About</a><a href="/press/">Press</a><a href="/newsletter/">Newsletter</a><a href="mailto:hello@studiogibbles.com">Contact</a></div>
+    <div class="fcol"><h5>FOLLOW</h5><a href="https://steamcommunity.com/id/GamesByGatsby">Steam</a><a href="https://discord.gg/WqWxDTQWFa">Discord</a><a href="https://bsky.app/profile/willdooling.bsky.social">Bluesky</a><a href="https://www.youtube.com/@itsthewgd">YouTube</a></div>
+  </div>
+  <div class="fbar"><span>© 2026 Studio Gibbles. All rights reserved.</span><span>Made with <span class="paw">🐾</span> for Gibbles.</span></div>
+</div></footer>
+<script src="/assets/main.js"></script>
+</body>
+</html>
