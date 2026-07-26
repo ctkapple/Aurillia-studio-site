@@ -11,10 +11,10 @@
   /* --- unified type system ---
      head  = Press Start 2P : all headings, labels, buttons, nav, tags
      body  = VT323          : all running/paragraph copy + inputs
-     display = Cinzel       : index hero wordmark ONLY */
+     display = Caesar Dressing : index hero wordmark ONLY */
   --font-head:'Press Start 2P',monospace;
   --font-body:'VT323',monospace;
-  --font-display:'Cinzel',serif;
+  --font-display:'Caesar Dressing',cursive;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
@@ -80,7 +80,7 @@ p{text-wrap:pretty}
 .crackle{position:absolute;inset:0;background:radial-gradient(60% 40% at 30% 20%,rgba(199,232,220,.5),transparent 55%);mix-blend-mode:screen;opacity:0;animation:crackle 7s infinite}
 @keyframes crackle{0%,88%,100%{opacity:0}90%,95%{opacity:.6}92%,97%{opacity:.1}}
 .heroInner{position:relative;z-index:5;width:100%;box-sizing:border-box;padding:120px 24px 60px;transform:translateY(8vh)}
-.wordmark{font-family:'Cinzel',serif;font-weight:900;font-size:clamp(52px,8vw,96px);line-height:.92;letter-spacing:.02em;margin-top:22px;
+.wordmark{font-family:var(--font-display);font-weight:400;font-size:clamp(52px,8vw,96px);line-height:.92;letter-spacing:.02em;margin-top:22px;
   text-shadow:2px 2px 0 var(--cyan-deep),4px 4px 0 #103638,6px 6px 0 #071c1e,8px 8px 12px rgba(0,0,0,.8),0 0 46px rgba(143,220,200,.35);animation:float 6s ease-in-out infinite}
 @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
 .wordmark em{display:block;font-size:.46em;font-style:normal;color:var(--gold);letter-spacing:.16em;margin-top:6px;text-shadow:2px 2px 0 #081716,0 0 30px rgba(241,207,114,.45)}
