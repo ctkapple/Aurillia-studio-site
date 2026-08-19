@@ -3,10 +3,10 @@
    Tempest theme · shared stylesheet
    =========================================================== */
 :root{
-  --bg:#071416; --bg2:#0b2023; --panel:#153437; --panel2:#1c4144;
-  --line:#35686a; --ink:#f0f3e8; --muted:#9aada6;
-  --cyan:#96d3c4; --cyan-dim:#568f88; --cyan-deep:#1e5c5e;
-  --gold:#dfa942; --gold-dim:#95631f; --violet:#bb6871;
+  --bg:#061113; --bg2:#0b1d1e; --panel:#102a2b; --panel2:#193a3a;
+  --line:#2c5b59; --ink:#edf2e6; --muted:#91aaa2;
+  --cyan:#89c9bb; --cyan-dim:#477f78; --cyan-deep:#194f4b;
+  --gold:#d6a34a; --gold-dim:#8a5a22; --violet:#a75a65;
   --maxw:1200px;
   /* --- unified type system ---
      head  = Press Start 2P : all headings, labels, buttons, nav, tags
