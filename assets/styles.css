@@ -79,11 +79,9 @@ p{text-wrap:pretty}
 .scan{position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(0,0,0,.14) 0 2px,transparent 2px 4px);opacity:.5;pointer-events:none}
 .crackle{position:absolute;inset:0;background:radial-gradient(60% 40% at 30% 20%,rgba(199,232,220,.5),transparent 55%);mix-blend-mode:screen;opacity:0;animation:crackle 7s infinite}
 @keyframes crackle{0%,88%,100%{opacity:0}90%,95%{opacity:.6}92%,97%{opacity:.1}}
-.heroInner{position:relative;z-index:5;width:100%;box-sizing:border-box;padding:120px 24px 60px;transform:translateY(8vh)}
-.wordmark{font-family:var(--font-display);font-weight:400;font-size:clamp(52px,8vw,96px);line-height:.92;letter-spacing:.02em;margin-top:22px;
-  text-shadow:2px 2px 0 var(--cyan-deep),4px 4px 0 #103638,6px 6px 0 #071c1e,8px 8px 12px rgba(0,0,0,.8),0 0 46px rgba(143,220,200,.35);animation:float 6s ease-in-out infinite}
-@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
-.wordmark em{display:block;font-size:.46em;font-style:normal;color:var(--gold);letter-spacing:.16em;margin-top:6px;text-shadow:2px 2px 0 #081716,0 0 30px rgba(241,207,114,.45)}
+.heroInner{position:relative;z-index:5;width:100%;box-sizing:border-box;padding:104px 24px 72px;transform:translateY(-2vh)}
+.wordmark{width:min(640px,84vw);margin:0 auto;line-height:0;filter:drop-shadow(0 6px 12px rgba(0,0,0,.8)) drop-shadow(0 0 32px rgba(241,207,114,.24))}
+.wordmark img{width:100%;height:auto;image-rendering:auto}
 .tag{width:fit-content;max-width:calc(100% - 32px);margin:30px auto 0;padding:8px 16px;background:rgba(7,20,22,.78);border:2px solid var(--gold-dim);box-shadow:4px 4px 0 rgba(0,0,0,.55);font-size:clamp(20px,1.8vw,24px);color:#fff;line-height:1.45;text-shadow:2px 2px 0 #081716}
 .cta{display:flex;gap:20px;justify-content:center;margin-top:40px;flex-wrap:wrap}
 
