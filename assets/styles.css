@@ -3,10 +3,10 @@
    Tempest theme · shared stylesheet
    =========================================================== */
 :root{
-  --bg:#071416; --bg2:#0c2022; --panel:#123033; --panel2:#194247;
-  --line:#315e60; --ink:#e9f2e8; --muted:#8ea7a2;
-  --cyan:#8fdcc8; --cyan-dim:#4c8f87; --cyan-deep:#1d5758;
-  --gold:#f1cf72; --gold-dim:#a27b36; --violet:#c86a7a;
+  --bg:#071416; --bg2:#0b2023; --panel:#153437; --panel2:#1c4144;
+  --line:#35686a; --ink:#f0f3e8; --muted:#9aada6;
+  --cyan:#96d3c4; --cyan-dim:#568f88; --cyan-deep:#1e5c5e;
+  --gold:#dfa942; --gold-dim:#95631f; --violet:#bb6871;
   --maxw:1200px;
   /* --- unified type system ---
      head  = Press Start 2P : all headings, labels, buttons, nav, tags
@@ -79,7 +79,7 @@ p{text-wrap:pretty}
 .scan{position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(0,0,0,.14) 0 2px,transparent 2px 4px);opacity:.5;pointer-events:none}
 .crackle{position:absolute;inset:0;background:radial-gradient(60% 40% at 30% 20%,rgba(199,232,220,.5),transparent 55%);mix-blend-mode:screen;opacity:0;animation:crackle 7s infinite}
 @keyframes crackle{0%,88%,100%{opacity:0}90%,95%{opacity:.6}92%,97%{opacity:.1}}
-.heroInner{position:relative;z-index:5;width:100%;box-sizing:border-box;padding:104px 24px 72px;transform:translateY(-2vh)}
+.heroInner{position:relative;z-index:5;width:100%;box-sizing:border-box;padding:104px 24px 72px;transform:translateY(2vh)}
 .wordmark{width:min(640px,84vw);margin:0 auto;line-height:0;filter:drop-shadow(0 6px 12px rgba(0,0,0,.8)) drop-shadow(0 0 32px rgba(241,207,114,.24))}
 .wordmark img{width:100%;height:auto;image-rendering:auto}
 .tag{width:fit-content;max-width:calc(100% - 32px);margin:30px auto 0;padding:8px 16px;background:rgba(7,20,22,.78);border:2px solid var(--gold-dim);box-shadow:4px 4px 0 rgba(0,0,0,.55);font-size:clamp(20px,1.8vw,24px);color:#fff;line-height:1.45;text-shadow:2px 2px 0 #081716}
