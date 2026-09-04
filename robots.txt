@@ -1,3 +1,4 @@
 User-agent: *
 Allow: /
+Disallow: /MasterSagaWheel/
 Sitemap: https://studiogibbles.com/sitemap.xml
