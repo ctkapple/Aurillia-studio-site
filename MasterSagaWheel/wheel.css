@@ -1316,7 +1316,16 @@ summary:focus-visible {
 
 .admin-popover[hidden] { display: none; }
 .admin-popover .field { gap: 7px; }
-.admin-popover select { width: 100%; }
+.admin-popover select,
+.admin-popover select option {
+  width: 100%;
+  font-family: var(--font-display);
+}
+
+.admin-popover select option:disabled {
+  color: rgba(196, 203, 212, .46);
+  font-size: .92em;
+}
 
 .editor-status[data-tone="warning"] {
   color: #ffc75b;

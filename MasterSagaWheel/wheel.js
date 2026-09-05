@@ -1343,7 +1343,8 @@
     dom.riggedWinner.replaceChildren();
     var placeholder = document.createElement("option");
     placeholder.value = "";
-    placeholder.textContent = state.entries.length ? "Choose a reward" : "Add rewards first";
+    placeholder.textContent = "Forced reward";
+    placeholder.disabled = true;
     dom.riggedWinner.appendChild(placeholder);
 
     // Identical entries collapse into one option, keyed by the first entry with that
