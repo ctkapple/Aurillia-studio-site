@@ -36,6 +36,8 @@
   var BOOST_TURNS = 3.5;         // full extra rotations added per full-strength boost click
   var BOOST_RECOVERY_MS = 1500;
   var BOOST_RESERVE_COST = 0.45;
+  var SPIN_WARP_FRAME_MS = 48;
+  var SPIN_WARP_FRAME_COUNT = 10;
 
   var REWARDS = {
     ur: { label: "UR", singular: "UR", plural: "UR", image: "UR_Craft_Asset.png", color: "#bd4fe2", precedence: 90 },
@@ -144,6 +146,7 @@
     resultPrimary: document.getElementById("result-primary"),
     resultAlternatives: document.getElementById("result-alternatives"),
     winnerParticles: document.getElementById("winner-particles"),
+    spinWarp: document.getElementById("spin-warp"),
     snowField: document.getElementById("snow-field"),
     composerToggle: document.getElementById("composer-toggle"),
     composer: document.getElementById("entry-composer"),
@@ -163,6 +166,7 @@
   };
 
   var soundEvents = new EventTarget();
+  var spinWarpTimer = null;
   window.selectionWheelSoundEvents = soundEvents;
 
   var state = {
@@ -558,6 +562,55 @@
   function presetIconKey(preset) {
     if (preset && preset.builtinKey && BUILTIN_PRESETS[preset.builtinKey]) return BUILTIN_PRESETS[preset.builtinKey].iconKey;
     return validIconKey(preset && preset.iconKey) || genericIconForId(preset && preset.id);
+  }
+
+  function spinWarpFramePath(color, frame) {
+    return "spin-vfx/" + color + "/frame" + ("000" + frame).slice(-4) + ".png";
+  }
+
+  function spinWarpColor() {
+    var activePreset = state.presets.find(function (preset) {
+      return preset.id === state.draftIdentity.presetId;
+    });
+    if (activePreset && activePreset.builtinKey === "winner") return "yellow";
+    if (activePreset && activePreset.builtinKey === "oneOne") return "blue";
+    if (activePreset && activePreset.builtinKey === "farfa") return "violet";
+    return "green";
+  }
+
+  function preloadSpinWarpFrames() {
+    ["yellow", "blue", "violet", "green"].forEach(function (color) {
+      for (var frame = 0; frame < SPIN_WARP_FRAME_COUNT; frame += 1) {
+        var image = new Image();
+        image.src = spinWarpFramePath(color, frame);
+      }
+    });
+  }
+
+  function clearSpinWarp() {
+    if (spinWarpTimer !== null) {
+      window.clearInterval(spinWarpTimer);
+      spinWarpTimer = null;
+    }
+    if (dom.spinWarp) dom.spinWarp.classList.remove("is-active");
+  }
+
+  function playSpinWarp(reducedMotion) {
+    clearSpinWarp();
+    if (reducedMotion || !dom.spinWarp) return;
+
+    var color = spinWarpColor();
+    var frame = 0;
+    dom.spinWarp.src = spinWarpFramePath(color, frame);
+    dom.spinWarp.classList.add("is-active");
+    spinWarpTimer = window.setInterval(function () {
+      frame += 1;
+      if (frame >= SPIN_WARP_FRAME_COUNT) {
+        clearSpinWarp();
+        return;
+      }
+      dom.spinWarp.src = spinWarpFramePath(color, frame);
+    }, SPIN_WARP_FRAME_MS);
   }
 
   function sanitizeDraftIdentity(raw, presets) {
@@ -2416,16 +2469,44 @@
     return custom.length;
   }
 
-  function appendHtmlBranch(container, branch, size, emphasizeHighest) {
-    sortedComponents(branch).forEach(function (item, index) {
-      if (index) {
-        var plus = document.createElement("span");
-        plus.className = "reward-plus";
-        plus.textContent = "+";
-        container.appendChild(plus);
-      }
-      container.appendChild(htmlComponent(item, size, Boolean(emphasizeHighest && index === 0)));
+  // An option belongs visually to the reward it can replace, rather than reading as a
+  // detached result footer. The balanced marker/spacer columns keep the reward cluster
+  // centred beneath its parent even though the "or" marker sits to the left.
+  function appendResultChoice(container, primaryBranch, alternatives) {
+    var choice = document.createElement("div");
+    choice.className = "result-choice";
+    var primary = document.createElement("div");
+    primary.className = "result-choice__primary";
+    appendHeroBranch(primary, primaryBranch);
+    choice.appendChild(primary);
+
+    alternatives.forEach(function (branch) {
+      var alternative = document.createElement("div");
+      alternative.className = "result-choice__alternative";
+      var marker = document.createElement("span");
+      marker.className = "result-alternative__marker";
+      marker.textContent = "or";
+      alternative.appendChild(marker);
+
+      var visual = document.createElement("div");
+      visual.className = "result-choice__alternative-visual";
+      appendHeroBranch(visual, branch);
+      var helper = document.createElement("p");
+      helper.className = "result-choice__alternative-helper";
+      if (appendHelperBranch(helper, branch)) visual.appendChild(helper);
+      alternative.appendChild(visual);
+
+      var spacer = document.createElement("span");
+      spacer.className = "result-choice__marker-spacer";
+      spacer.setAttribute("aria-hidden", "true");
+      alternative.appendChild(spacer);
+      alternative.setAttribute("aria-label", "Alternative: " + branch.map(function (item) {
+        return componentWords(item, false);
+      }).join(" and "));
+      choice.appendChild(alternative);
     });
+
+    container.appendChild(choice);
   }
 
   function renderResultCard(entry) {
@@ -2433,38 +2514,34 @@
     dom.resultAlternatives.replaceChildren();
     dom.resultCard.setAttribute("aria-label", "Winning reward: " + entryLabel(entry));
 
-    var headline = entry.kind === "structured"
-      ? primaryComponents(entry.reward)
-      : [component("custom", 1, entry.label)];
-
     var hero = document.createElement("div");
     hero.className = "result-hero";
-    appendHeroBranch(hero, headline);
+    var headline;
+    if (entry.kind === "structured") {
+      var always = sortedComponents(entry.reward.always || []);
+      var primaryIndex = primaryOptionIndex(entry.reward);
+      var primaryBranch = primaryIndex >= 0 ? sortedComponents(entry.reward.options[primaryIndex]) : [];
+      var alternatives = (entry.reward.options || []).filter(function (branch, index) {
+        return index !== primaryIndex;
+      }).map(sortedComponents);
+      headline = always.concat(primaryBranch);
+      appendHeroBranch(hero, always);
+      if (always.length && primaryBranch.length) {
+        var plus = document.createElement("span");
+        plus.className = "hero-plus";
+        plus.textContent = "+";
+        hero.appendChild(plus);
+      }
+      if (primaryBranch.length) appendResultChoice(hero, primaryBranch, alternatives);
+    } else {
+      headline = [component("custom", 1, entry.label)];
+      appendHeroBranch(hero, headline);
+    }
     dom.resultPrimary.appendChild(hero);
 
     var helper = document.createElement("p");
     helper.className = "result-helper";
     if (appendHelperBranch(helper, headline)) dom.resultPrimary.appendChild(helper);
-
-    if (entry.kind === "structured") {
-      // The plate carries only the winning slice's own reward. What could have been won
-      // stays legible on the dimmed wheel behind it, so nothing competes with this.
-      var primaryIndex = primaryOptionIndex(entry.reward);
-      (entry.reward.options || []).forEach(function (branch, index) {
-        if (index === primaryIndex) return;
-        var line = document.createElement("p");
-        line.className = "result-alternative";
-        var marker = document.createElement("span");
-        marker.className = "result-alternative__marker";
-        marker.textContent = "or";
-        line.appendChild(marker);
-        appendHtmlBranch(line, branch, "or");
-        line.setAttribute("aria-label", "Alternative: " + branch.map(function (item) {
-          return componentWords(item, false);
-        }).join(" and "));
-        dom.resultAlternatives.appendChild(line);
-      });
-    }
 
     dom.resultCard.setAttribute("aria-hidden", "false");
     fitResultCard();
@@ -2542,6 +2619,7 @@
     state.winnerIndex = winnerIndex;
     setCinematic(true);
     document.body.classList.add("is-spinning");
+    playSpinWarp(reducedMotion);
     dom.spinButton.disabled = false;
     dom.spinButton.setAttribute("aria-label", "Wheel spinning");
     dom.spinButton.focus();
@@ -2631,6 +2709,7 @@
     state.spinSnapshot = null;
     state.winnerIndex = -1;
     state.spinMotion = null;
+    clearSpinWarp();
     clearSnow();
     document.body.classList.remove("is-result", "is-revealing", "has-winner", "is-spinning");
     document.body.style.removeProperty("--winner-glow");
@@ -3196,6 +3275,7 @@
   }
 
   hydrateState();
+  preloadSpinWarpFrames();
   hydrateSoundPreference();
   syncSoundToggle();
   bindSoundEvents();
