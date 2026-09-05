@@ -92,7 +92,7 @@
   // rim instead of the fill. It also leaves the losing slices somewhere to fall when they
   // desaturate for a result.
   var PRESET_PALETTES = {
-    winner: ["#d98f34", "#a66a2e", "#4a463f"],                                   // OPTION A: trophy gold -> neutral graphite
+    winner: ["#ffc100", "#9a0056", "#580069"],                                   // royal crown: gold -> wine -> violet
     oneOne: ["#2c8fa8", "#2f4a86", "#1a2b3c"],                                   // glacier teal -> slate
     farfa: ["#6a2a8c", "#a05a18", "#8a3340", "#4a2a6b", "#2e2038"]               // violet / amber / wine / grape
   };
