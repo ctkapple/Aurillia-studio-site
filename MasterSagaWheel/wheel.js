@@ -151,12 +151,8 @@
     confirmAction: document.getElementById("confirm-action"),
     confirmCancel: document.getElementById("confirm-cancel"),
     exportDialog: document.getElementById("export-dialog"),
-    exportDialogTitle: document.getElementById("export-dialog-title"),
-    exportPreviewFormat: document.getElementById("export-preview-format"),
-    exportPreview: document.getElementById("export-preview"),
     exportCopyStatus: document.getElementById("export-copy-status"),
-    copyExportJson: document.getElementById("copy-export-json"),
-    copyExportMarkdown: document.getElementById("copy-export-markdown"),
+    copyExportSettings: document.getElementById("copy-export-settings"),
     exportDialogClose: document.getElementById("export-dialog-close"),
     resultAnnouncement: document.getElementById("result-announcement"),
     resultCard: document.getElementById("result-card"),
@@ -213,7 +209,6 @@
   var importCloseAction = null;
   var exportDialogOpener = null;
   var currentExportJson = "";
-  var currentExportMarkdown = "";
   var statusTimer = 0;
   var initialNotice = "";
   var heldCinematicKeys = new Set();
@@ -612,16 +607,22 @@
     return Boolean(value) && typeof value === "object" && !Array.isArray(value);
   }
 
+  // Fenced ```json import is intentionally dormant: JSON is the only active import format
+  // for now. Kept here, unused, in case fenced Markdown import is restored later.
+  function extractFencedJsonBlock(trimmed) {
+    var match = /^```json\r?\n([\s\S]*)\r?\n```$/.exec(trimmed);
+    if (!match || /(^|\r?\n)```(?:\r?\n|$)/.test(match[1])) {
+      importFailure("Use raw JSON or one complete fenced json block with no extra text.");
+    }
+    return match[1];
+  }
+
   function parseImportText(value) {
     if (typeof value !== "string") importFailure("Paste a wheel export to continue.");
     var trimmed = value.trim();
     if (!trimmed) importFailure("Paste a wheel export to continue.");
     if (trimmed.indexOf("```") === 0) {
-      var match = /^```json\r?\n([\s\S]*)\r?\n```$/.exec(trimmed);
-      if (!match || /(^|\r?\n)```(?:\r?\n|$)/.test(match[1])) {
-        importFailure("Use raw JSON or one complete fenced json block with no extra text.");
-      }
-      trimmed = match[1];
+      importFailure("Fenced Markdown blocks aren't supported. Paste raw JSON only.");
     }
     try {
       return JSON.parse(trimmed);
@@ -754,13 +755,10 @@
     return JSON.stringify(buildWheelExport(preset), null, 2);
   }
 
+  // Markdown export is intentionally dormant: JSON is the only active export format for
+  // now. Kept here, unused, in case fenced Markdown export is restored later.
   function formatExportMarkdown(json) {
     return "```json\n" + json + "\n```";
-  }
-
-  function setExportPreview(format) {
-    dom.exportPreviewFormat.value = format;
-    dom.exportPreview.value = format === "markdown" ? currentExportMarkdown : currentExportJson;
   }
 
   async function copyExportText(text) {
@@ -771,13 +769,22 @@
       } catch (error) {}
     }
 
-    dom.exportPreview.focus();
-    dom.exportPreview.select();
+    var scratch = document.createElement("textarea");
+    scratch.value = text;
+    scratch.setAttribute("readonly", "");
+    scratch.style.position = "fixed";
+    scratch.style.top = "-1000px";
+    scratch.style.left = "-1000px";
+    document.body.appendChild(scratch);
+    scratch.select();
+    var copied = false;
     try {
-      if (document.execCommand("copy")) return true;
+      copied = document.execCommand("copy");
     } catch (error) {}
+    document.body.removeChild(scratch);
+    if (copied) return true;
 
-    dom.exportCopyStatus.textContent = "Copy was blocked. Press Ctrl+C to copy the selected text.";
+    dom.exportCopyStatus.textContent = "Copy failed. Check clipboard permissions and try again.";
     return false;
   }
 
@@ -785,14 +792,10 @@
     exportDialogOpener = opener;
     opener.closest(".saved-wheel-dock__item").classList.add("is-exporting");
     currentExportJson = formatExportJson(preset);
-    currentExportMarkdown = formatExportMarkdown(currentExportJson);
-    dom.exportDialogTitle.textContent = "Export " + preset.name;
     dom.exportCopyStatus.textContent = "";
-    setExportPreview("json");
     dom.exportDialog.showModal();
     window.requestAnimationFrame(function () {
-      dom.exportPreview.focus();
-      dom.exportPreview.select();
+      dom.copyExportSettings.focus();
     });
   }
 
@@ -805,7 +808,6 @@
     var row = opener && opener.closest(".saved-wheel-dock__item");
     exportDialogOpener = null;
     currentExportJson = "";
-    currentExportMarkdown = "";
     window.requestAnimationFrame(function () {
       if (opener && opener.isConnected) opener.focus();
       if (row) row.classList.remove("is-exporting");
@@ -3577,19 +3579,9 @@
   });
   dom.confirmDialog.addEventListener("close", handleDialogClose);
   dom.rewardDialog.addEventListener("close", handleRewardDialogClose);
-  dom.exportPreviewFormat.addEventListener("change", function () {
-    setExportPreview(dom.exportPreviewFormat.value);
+  dom.copyExportSettings.addEventListener("click", async function () {
     dom.exportCopyStatus.textContent = "";
-  });
-  dom.copyExportJson.addEventListener("click", async function () {
-    setExportPreview("json");
-    dom.exportCopyStatus.textContent = "";
-    if (await copyExportText(currentExportJson)) dom.exportCopyStatus.textContent = "JSON copied.";
-  });
-  dom.copyExportMarkdown.addEventListener("click", async function () {
-    setExportPreview("markdown");
-    dom.exportCopyStatus.textContent = "";
-    if (await copyExportText(currentExportMarkdown)) dom.exportCopyStatus.textContent = "Markdown copied.";
+    if (await copyExportText(currentExportJson)) dom.exportCopyStatus.textContent = "Export settings copied.";
   });
   dom.exportDialogClose.addEventListener("click", closeExportDialog);
   dom.exportDialog.addEventListener("keydown", function (event) {

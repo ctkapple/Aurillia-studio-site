@@ -2581,14 +2581,9 @@ summary:focus-visible {
 .import-dialog__content textarea { width: 100%; min-height: min(40vh, 360px); margin-top: 7px; padding: 14px; resize: vertical; border: 1px solid var(--line); border-radius: 10px; color: var(--ink); background: rgba(2, 5, 11, .76); font: .72rem/1.55 ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace; tab-size: 2; }
 .import-dialog__content textarea:focus { border-color: var(--line-bright); outline: 2px solid rgba(61, 229, 255, .16); outline-offset: 2px; }
 .import-dialog__content .dialog-actions { flex-wrap: wrap; margin-top: 12px; }
-.wheel-dialog--export { width: min(680px, calc(100vw - 48px)); }
+.wheel-dialog--export { width: min(420px, calc(100vw - 48px)); }
 .export-dialog__content { padding: 26px; }
 .export-dialog__content h2 { margin: 0; }
-.export-dialog__note { margin: 10px 0 0; color: var(--muted-bright); font-size: .72rem; line-height: 1.55; }
-.export-dialog__format { display: grid; gap: 7px; margin-top: 20px; color: var(--muted-bright); font-size: .62rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
-.export-dialog__format select { width: min(220px, 100%); }
-.export-dialog__content textarea { width: 100%; min-height: min(48vh, 430px); margin-top: 14px; padding: 14px; resize: vertical; border: 1px solid var(--line); border-radius: 10px; color: var(--ink); background: rgba(2, 5, 11, .76); font: .72rem/1.55 ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace; tab-size: 2; }
-.export-dialog__content textarea:focus { border-color: var(--line-bright); outline: 2px solid rgba(61, 229, 255, .16); outline-offset: 2px; }
-.export-dialog__status { min-height: 18px; margin: 9px 0 0; color: var(--cyan); font-size: .62rem; line-height: 1.45; }
+.export-dialog__status { min-height: 18px; margin: 14px 0 0; color: var(--cyan); font-size: .62rem; line-height: 1.45; }
 .export-dialog__content .dialog-actions { flex-wrap: wrap; margin-top: 12px; }
 .dialog-validation { min-height: 17px; margin: 12px 0 0; color: var(--gold); font-size: .62rem; }

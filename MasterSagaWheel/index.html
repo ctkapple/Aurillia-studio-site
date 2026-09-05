@@ -215,10 +215,9 @@
   <dialog class="wheel-dialog wheel-dialog--import" id="import-dialog" aria-labelledby="import-dialog-title" aria-describedby="import-dialog-note">
     <form class="import-dialog__content" id="import-wheel-form">
       <h2 id="import-dialog-title">Import wheel</h2>
-      <p class="import-dialog__note" id="import-dialog-note">Paste a Master Saga Wheel export as JSON or a fenced json Markdown block.</p>
-      <p class="sr-only" id="import-format-description">Both accepted forms contain the same JSON.</p>
+      <p class="import-dialog__note" id="import-dialog-note">Paste a Master Saga Wheel export as raw JSON.</p>
       <label class="import-dialog__field" for="import-wheel-text">Wheel export</label>
-      <textarea id="import-wheel-text" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="Paste exported JSON or a fenced json Markdown block" aria-describedby="import-dialog-note import-format-description import-wheel-validation"></textarea>
+      <textarea id="import-wheel-text" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="Paste exported JSON" aria-describedby="import-dialog-note import-wheel-validation"></textarea>
       <p class="dialog-validation" id="import-wheel-validation" role="alert"></p>
       <div class="dialog-actions">
         <button class="dialog-button dialog-button--cancel" id="import-wheel-cancel" type="button">Cancel</button>
@@ -229,20 +228,10 @@
 
   <dialog class="wheel-dialog wheel-dialog--export" id="export-dialog" aria-labelledby="export-dialog-title">
     <section class="export-dialog__content">
-      <h2 id="export-dialog-title">Export wheel</h2>
-      <p class="export-dialog__note">This export contains the saved version of this wheel.</p>
-      <label class="export-dialog__format">
-        <span>Preview format</span>
-        <select id="export-preview-format">
-          <option value="json">JSON</option>
-          <option value="markdown">Markdown</option>
-        </select>
-      </label>
-      <textarea id="export-preview" readonly spellcheck="false" aria-label="Saved wheel export preview"></textarea>
-      <p class="export-dialog__status" id="export-copy-status" aria-live="polite"></p>
+      <h2 id="export-dialog-title">Export Wheel</h2>
+      <p class="export-dialog__status" id="export-copy-status" role="status" aria-live="polite"></p>
       <div class="dialog-actions">
-        <button class="dialog-button" id="copy-export-json" type="button">Copy JSON</button>
-        <button class="dialog-button" id="copy-export-markdown" type="button">Copy Markdown</button>
+        <button class="dialog-button dialog-button--confirm" id="copy-export-settings" type="button">Copy Export Settings</button>
         <button class="dialog-button dialog-button--cancel" id="export-dialog-close" type="button">Close</button>
       </div>
     </section>
