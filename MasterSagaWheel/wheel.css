@@ -91,6 +91,85 @@ summary:focus-visible {
   border: 0;
 }
 
+/* The site backdrop: bg.png held well out of focus behind the wheel, like a wide-aperture
+   photo where only the subject is sharp. It sits below .ambient-field in DOM order (same
+   z-index, painted first) so the grid/stars/blooms still layer on top of it. Left exposed
+   wherever the app-shell's panels and wheel don't cover the viewport, it doubles as a plain
+   drag-to-pan / scroll-to-zoom surface -- forgiving because the source art is minimalist
+   and almost single-color, so panning or zooming never reveals an awkward seam. */
+.scene-backdrop {
+  position: fixed;
+  z-index: 0;
+  inset: 0;
+  overflow: hidden;
+  background: #050811;
+  cursor: grab;
+  touch-action: none;
+}
+
+.scene-backdrop.is-dragging {
+  cursor: grabbing;
+}
+
+/* Split down the middle: the right half shows the source image's own right half (where the
+   subject sits) as-is, and the left half is that same right half mirrored -- not the image's
+   actual left half, which is empty -- so the whole thing reads as one symmetric shape built
+   from the subject. Panning/zooming transforms this wrapper as a rigid unit, so the two
+   halves always move together and stay aligned at the seam. */
+.scene-backdrop__mirror {
+  position: absolute;
+  inset: 0;
+  transform: translate3d(var(--bg-x, 0px), var(--bg-y, 0px), 0) scale(var(--bg-scale, 1.18));
+  transform-origin: center center;
+  filter: blur(11px) saturate(1.05) brightness(.56);
+  will-change: transform;
+}
+
+.scene-backdrop__half {
+  position: absolute;
+  top: 0;
+  width: 50%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.scene-backdrop__half--left {
+  left: 0;
+}
+
+.scene-backdrop__half--right {
+  right: 0;
+}
+
+.scene-backdrop__flip {
+  position: absolute;
+  inset: 0;
+  transform: scaleX(-1);
+}
+
+.scene-backdrop__img {
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 200%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* Blends the photo into the site's dark palette so it reads as atmosphere behind the wheel
+   rather than a pasted-in image. */
+.scene-backdrop::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 46% 42%, rgba(6, 10, 20, .32), rgba(3, 5, 11, .74) 68%),
+    linear-gradient(150deg, rgba(6, 10, 20, .26), rgba(3, 5, 11, .48) 60%);
+}
+
 .ambient-field,
 .ambient-field > span {
   position: fixed;

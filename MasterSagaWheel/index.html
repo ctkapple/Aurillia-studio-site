@@ -10,10 +10,23 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Michroma&family=Zen+Dots&display=swap">
-  <link rel="stylesheet" href="wheel.css?v=51d8ae0">
-  <script src="wheel.js?v=51d8ae0" defer></script>
+  <link rel="stylesheet" href="wheel.css?v=51d8ae0-bg1">
+  <script src="wheel.js?v=51d8ae0-bg1" defer></script>
 </head>
 <body>
+  <div class="scene-backdrop" id="scene-backdrop" aria-hidden="true">
+    <div class="scene-backdrop__mirror" id="scene-backdrop-mirror">
+      <div class="scene-backdrop__half scene-backdrop__half--left">
+        <div class="scene-backdrop__flip">
+          <img class="scene-backdrop__img" src="bg.png" alt="" draggable="false">
+        </div>
+      </div>
+      <div class="scene-backdrop__half scene-backdrop__half--right">
+        <img class="scene-backdrop__img" src="bg.png" alt="" draggable="false">
+      </div>
+    </div>
+  </div>
+
   <div class="ambient-field" aria-hidden="true">
     <span class="ambient-field__grid"></span>
     <span class="ambient-field__bloom ambient-field__bloom--cyan"></span>

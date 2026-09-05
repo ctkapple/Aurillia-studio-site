@@ -4,6 +4,7 @@
   var SVG_NS = "http://www.w3.org/2000/svg";
   var STORAGE_KEY = "selection-wheel:v1";
   var AUDIO_PREFERENCE_KEY = "selection-wheel:audio:v1";
+  var BACKDROP_PREFERENCE_KEY = "selection-wheel:backdrop:v1";
   var STORAGE_VERSION = 6;
   var DEFAULT_SEED_VERSION = 2;
   var MAX_ENTRIES = 60;
@@ -91,7 +92,7 @@
   // rim instead of the fill. It also leaves the losing slices somewhere to fall when they
   // desaturate for a result.
   var PRESET_PALETTES = {
-    winner: ["#d4661c", "#8a5a18", "#3a2712"],                                   // molten orange -> chocolate
+    winner: ["#d98f34", "#a66a2e", "#4a463f"],                                   // OPTION A: trophy gold -> neutral graphite
     oneOne: ["#2c8fa8", "#2f4a86", "#1a2b3c"],                                   // glacier teal -> slate
     farfa: ["#6a2a8c", "#a05a18", "#8a3340", "#4a2a6b", "#2e2038"]               // violet / amber / wine / grape
   };
@@ -583,6 +584,11 @@
       var raw = window.localStorage.getItem(STORAGE_KEY);
       if (!raw) {
         seedDefaultPresets(0);
+        var defaultPreset = state.presets.find(function (preset) { return preset.builtinKey === "oneOne"; });
+        if (defaultPreset) {
+          state.entries = cloneEntries(defaultPreset.entries, false);
+          state.draftIdentity = { presetId: defaultPreset.id, name: defaultPreset.name, iconKey: presetIconKey(defaultPreset) };
+        }
         persistState();
         return;
       }
@@ -3087,10 +3093,112 @@
     heldCinematicKeys.delete(event.code || event.key);
   }, true);
 
+  // The backdrop photo is mostly one color, so free dragging/zooming never exposes a seam.
+  // It only needs to stay clamped enough that the blurred image always still fills the
+  // viewport -- everything else about where the user leaves it is fine to persist as-is.
+  function initSceneBackdrop() {
+    var root = document.getElementById("scene-backdrop");
+    var mirror = document.getElementById("scene-backdrop-mirror");
+    if (!root || !mirror) return;
+
+    var MIN_SCALE = 1;
+    var MAX_SCALE = 2.4;
+    var DEFAULT_SCALE = 1.18;
+    var ZOOM_STEP = 0.08;
+
+    var state = { x: 0, y: 0, scale: DEFAULT_SCALE };
+    try {
+      var saved = JSON.parse(localStorage.getItem(BACKDROP_PREFERENCE_KEY) || "null");
+      if (saved && typeof saved.scale === "number") {
+        state.scale = clamp(saved.scale, MIN_SCALE, MAX_SCALE);
+        state.x = typeof saved.x === "number" ? saved.x : 0;
+        state.y = typeof saved.y === "number" ? saved.y : 0;
+      }
+    } catch (err) { /* ignore malformed/blocked storage */ }
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function apply() {
+      var rect = root.getBoundingClientRect();
+      var maxX = Math.max(0, (state.scale - 1) * rect.width / 2);
+      var maxY = Math.max(0, (state.scale - 1) * rect.height / 2);
+      state.x = clamp(state.x, -maxX, maxX);
+      state.y = clamp(state.y, -maxY, maxY);
+      mirror.style.setProperty("--bg-x", state.x.toFixed(1) + "px");
+      mirror.style.setProperty("--bg-y", state.y.toFixed(1) + "px");
+      mirror.style.setProperty("--bg-scale", state.scale.toFixed(3));
+    }
+
+    var persistTimer = null;
+    function schedulePersist() {
+      clearTimeout(persistTimer);
+      persistTimer = setTimeout(function () {
+        try { localStorage.setItem(BACKDROP_PREFERENCE_KEY, JSON.stringify(state)); } catch (err) { /* ignore */ }
+      }, 400);
+    }
+
+    var dragging = false;
+    var pointerId = null;
+    var startX = 0, startY = 0, originX = 0, originY = 0;
+
+    root.addEventListener("pointerdown", function (event) {
+      if (event.button !== 0) return;
+      event.preventDefault();
+      dragging = true;
+      pointerId = event.pointerId;
+      startX = event.clientX;
+      startY = event.clientY;
+      originX = state.x;
+      originY = state.y;
+      root.classList.add("is-dragging");
+      try { root.setPointerCapture(pointerId); } catch (err) { /* ignore */ }
+    });
+
+    root.addEventListener("pointermove", function (event) {
+      if (!dragging || event.pointerId !== pointerId) return;
+      state.x = originX + (event.clientX - startX);
+      state.y = originY + (event.clientY - startY);
+      apply();
+    });
+
+    function endDrag(event) {
+      if (!dragging || event.pointerId !== pointerId) return;
+      dragging = false;
+      pointerId = null;
+      root.classList.remove("is-dragging");
+      schedulePersist();
+    }
+
+    root.addEventListener("pointerup", endDrag);
+    root.addEventListener("pointercancel", endDrag);
+
+    root.addEventListener("wheel", function (event) {
+      event.preventDefault();
+      state.scale = clamp(state.scale + (event.deltaY > 0 ? -ZOOM_STEP : ZOOM_STEP), MIN_SCALE, MAX_SCALE);
+      apply();
+      schedulePersist();
+    }, { passive: false });
+
+    root.addEventListener("dblclick", function () {
+      state.x = 0;
+      state.y = 0;
+      state.scale = DEFAULT_SCALE;
+      apply();
+      schedulePersist();
+    });
+
+    window.addEventListener("resize", apply);
+
+    apply();
+  }
+
   hydrateState();
   hydrateSoundPreference();
   syncSoundToggle();
   bindSoundEvents();
   renderAll();
+  initSceneBackdrop();
   if (initialNotice) setStatus(initialNotice, "warning", 0);
 }());
