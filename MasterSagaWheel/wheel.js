@@ -5,7 +5,9 @@
   var STORAGE_KEY = "selection-wheel:v1";
   var AUDIO_PREFERENCE_KEY = "selection-wheel:audio:v1";
   var BACKDROP_PREFERENCE_KEY = "selection-wheel:backdrop:v1";
-  var STORAGE_VERSION = 6;
+  var STORAGE_VERSION = 7;
+  var WHEEL_EXPORT_FORMAT = "studio-gibbles.master-saga-wheel";
+  var WHEEL_EXPORT_VERSION = 1;
   var DEFAULT_SEED_VERSION = 2;
   var MAX_ENTRIES = 60;
   var MAX_LABEL_LENGTH = 48;
@@ -133,6 +135,12 @@
     newWheelName: document.getElementById("new-wheel-name"),
     newWheelValidation: document.getElementById("new-wheel-validation"),
     newWheelCancel: document.getElementById("new-wheel-cancel"),
+    importWheelOpen: document.getElementById("import-wheel-open"),
+    importDialog: document.getElementById("import-dialog"),
+    importWheelForm: document.getElementById("import-wheel-form"),
+    importWheelText: document.getElementById("import-wheel-text"),
+    importWheelValidation: document.getElementById("import-wheel-validation"),
+    importWheelCancel: document.getElementById("import-wheel-cancel"),
     riggedToggle: document.getElementById("rigged-toggle"),
     riggedWinner: document.getElementById("rigged-winner"),
     adminToggle: document.getElementById("admin-toggle"),
@@ -141,6 +149,15 @@
     confirmDialog: document.getElementById("confirm-dialog"),
     confirmMessage: document.getElementById("confirm-message"),
     confirmAction: document.getElementById("confirm-action"),
+    confirmCancel: document.getElementById("confirm-cancel"),
+    exportDialog: document.getElementById("export-dialog"),
+    exportDialogTitle: document.getElementById("export-dialog-title"),
+    exportPreviewFormat: document.getElementById("export-preview-format"),
+    exportPreview: document.getElementById("export-preview"),
+    exportCopyStatus: document.getElementById("export-copy-status"),
+    copyExportJson: document.getElementById("copy-export-json"),
+    copyExportMarkdown: document.getElementById("copy-export-markdown"),
+    exportDialogClose: document.getElementById("export-dialog-close"),
     resultAnnouncement: document.getElementById("result-announcement"),
     resultCard: document.getElementById("result-card"),
     resultPrimary: document.getElementById("result-primary"),
@@ -189,10 +206,14 @@
     composerEditIndex: null,
     editingEntryId: null,
     composerUnsupported: false,
-    draftIdentity: { presetId: null, name: "Custom Wheel", iconKey: "genex" }
+    draftIdentity: { presetId: null, name: "Custom Wheel", iconKey: "genex", themeKey: "custom" }
   };
 
   var pendingConfirmation = null;
+  var importCloseAction = null;
+  var exportDialogOpener = null;
+  var currentExportJson = "";
+  var currentExportMarkdown = "";
   var statusTimer = 0;
   var initialNotice = "";
   var heldCinematicKeys = new Set();
@@ -564,6 +585,233 @@
     return validIconKey(preset && preset.iconKey) || genericIconForId(preset && preset.id);
   }
 
+  function validThemeKey(value) {
+    if (value === "custom") return value;
+    return typeof value === "string" && PRESET_PALETTES[value] ? value : null;
+  }
+
+  function presetThemeKey(preset) {
+    if (preset && preset.builtinKey && PRESET_PALETTES[preset.builtinKey]) return preset.builtinKey;
+    return validThemeKey(preset && preset.themeKey) || "custom";
+  }
+
+  function exportAppearance(preset) {
+    return {
+      iconKey: presetIconKey(preset),
+      themeKey: presetThemeKey(preset)
+    };
+  }
+
+  function importFailure(message) {
+    var error = new Error(message);
+    error.name = "WheelImportError";
+    throw error;
+  }
+
+  function isObjectRecord(value) {
+    return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+  }
+
+  function parseImportText(value) {
+    if (typeof value !== "string") importFailure("Paste a wheel export to continue.");
+    var trimmed = value.trim();
+    if (!trimmed) importFailure("Paste a wheel export to continue.");
+    if (trimmed.indexOf("```") === 0) {
+      var match = /^```json\r?\n([\s\S]*)\r?\n```$/.exec(trimmed);
+      if (!match || /(^|\r?\n)```(?:\r?\n|$)/.test(match[1])) {
+        importFailure("Use raw JSON or one complete fenced json block with no extra text.");
+      }
+      trimmed = match[1];
+    }
+    try {
+      return JSON.parse(trimmed);
+    } catch (error) {
+      importFailure("This wheel export is not valid JSON.");
+    }
+  }
+
+  function validateImportedText(value, subject) {
+    if (typeof value !== "string" || !value.trim()) importFailure(subject + " cannot be blank.");
+    if (value.trim() !== value) importFailure(subject + " cannot begin or end with spaces.");
+    if (/\r|\n/.test(value)) importFailure(subject + " must be one line.");
+    if (value.length > MAX_LABEL_LENGTH) {
+      importFailure(subject + (/(?:names|labels)$/.test(subject) ? " are" : " is") + " limited to 48 characters.");
+    }
+    return value;
+  }
+
+  function validateImportedComponent(raw, location) {
+    if (!isObjectRecord(raw)) importFailure("Reward " + location + " is invalid.");
+    if (typeof raw.type !== "string" || !REWARDS[raw.type]) {
+      importFailure("Reward " + location + " uses an unknown type.");
+    }
+    if (!Number.isInteger(raw.quantity) || raw.quantity < 1 || raw.quantity > 999) {
+      importFailure("Reward " + location + " needs a whole-number quantity from 1 to 999.");
+    }
+    var imported = { type: raw.type, amount: raw.quantity };
+    if (raw.type === "custom") {
+      imported.text = validateImportedText(raw.text, "Reward " + location + " text");
+    }
+    return imported;
+  }
+
+  function validateImportedSlice(raw, sliceIndex) {
+    var sliceNumber = sliceIndex + 1;
+    if (!isObjectRecord(raw)) importFailure("Slice " + sliceNumber + " is invalid.");
+    if (raw.kind !== "reward" && raw.kind !== "legacy-label") {
+      importFailure("Slice " + sliceNumber + " uses an unknown kind.");
+    }
+    if (raw.kind === "legacy-label") {
+      return {
+        kind: "custom",
+        label: validateImportedText(raw.text, "Slice " + sliceNumber + " label"),
+        presetKind: null
+      };
+    }
+    if (!Array.isArray(raw.always) || !Array.isArray(raw.options)) {
+      importFailure("Slice " + sliceNumber + " has invalid reward groups.");
+    }
+    if (raw.always.length > 12) importFailure("Slice " + sliceNumber + " has more than 12 guaranteed rewards.");
+    if (raw.options.length > 12) importFailure("Slice " + sliceNumber + " has more than 12 option branches.");
+    if (!raw.always.length && !raw.options.length) {
+      importFailure("Slice " + sliceNumber + " must contain at least one reward.");
+    }
+    var always = raw.always.map(function (componentValue, componentIndex) {
+      return validateImportedComponent(componentValue, "in slice " + sliceNumber + ", guaranteed reward " + (componentIndex + 1));
+    });
+    var options = raw.options.map(function (branch, branchIndex) {
+      var branchNumber = branchIndex + 1;
+      if (!Array.isArray(branch)) importFailure("Slice " + sliceNumber + ", option branch " + branchNumber + " is invalid.");
+      if (!branch.length) importFailure("Slice " + sliceNumber + ", option branch " + branchNumber + " cannot be empty.");
+      if (branch.length > 12) importFailure("Slice " + sliceNumber + ", option branch " + branchNumber + " has more than 12 rewards.");
+      return branch.map(function (componentValue, componentIndex) {
+        return validateImportedComponent(componentValue, "in slice " + sliceNumber + ", option branch " + branchNumber + ", component " + (componentIndex + 1));
+      });
+    });
+    return { kind: "structured", reward: { schema: 1, always: always, options: options } };
+  }
+
+  function validateWheelImport(value) {
+    var raw = parseImportText(value);
+    if (!isObjectRecord(raw)) importFailure("The wheel export must be a JSON object.");
+    if (typeof raw.format !== "string" || raw.format !== WHEEL_EXPORT_FORMAT) {
+      importFailure("This is not a Master Saga Wheel export.");
+    }
+    if (!Number.isInteger(raw.version)) importFailure("The wheel export version is missing or invalid.");
+    if (raw.version !== WHEEL_EXPORT_VERSION) {
+      importFailure("Wheel export version " + raw.version + " is not supported.");
+    }
+    if (!isObjectRecord(raw.wheel)) importFailure("The export does not contain a valid wheel.");
+    if (typeof raw.wheel.name !== "string") importFailure("The imported wheel needs a name.");
+    var name = validateImportedText(raw.wheel.name, "Wheel names");
+    if (!isObjectRecord(raw.wheel.appearance)) importFailure("The imported wheel has invalid appearance data.");
+    if (typeof raw.wheel.appearance.iconKey !== "string" || !PRESET_THEMES[raw.wheel.appearance.iconKey]) {
+      importFailure("The imported wheel uses an unknown icon.");
+    }
+    if (typeof raw.wheel.appearance.themeKey !== "string" || !validThemeKey(raw.wheel.appearance.themeKey)) {
+      importFailure("The imported wheel uses an unknown theme.");
+    }
+    if (!Array.isArray(raw.wheel.slices)) importFailure("The imported wheel needs a slices array.");
+    if (raw.wheel.slices.length > MAX_ENTRIES) importFailure("The imported wheel has more than 60 slices.");
+    return {
+      name: name,
+      iconKey: raw.wheel.appearance.iconKey,
+      themeKey: raw.wheel.appearance.themeKey,
+      entries: raw.wheel.slices.map(validateImportedSlice)
+    };
+  }
+
+  function exportComponent(component) {
+    var exported = { type: component.type, quantity: component.amount };
+    if (component.type === "custom") exported.text = component.text;
+    return exported;
+  }
+
+  function exportSlice(entry) {
+    if (entry.kind !== "structured") {
+      return { kind: "legacy-label", text: entry.label };
+    }
+    return {
+      kind: "reward",
+      always: entry.reward.always.map(exportComponent),
+      options: entry.reward.options.map(function (branch) { return branch.map(exportComponent); })
+    };
+  }
+
+  function buildWheelExport(preset) {
+    return {
+      format: WHEEL_EXPORT_FORMAT,
+      version: WHEEL_EXPORT_VERSION,
+      wheel: {
+        name: preset.name,
+        appearance: exportAppearance(preset),
+        slices: preset.entries.map(exportSlice)
+      }
+    };
+  }
+
+  function formatExportJson(preset) {
+    return JSON.stringify(buildWheelExport(preset), null, 2);
+  }
+
+  function formatExportMarkdown(json) {
+    return "```json\n" + json + "\n```";
+  }
+
+  function setExportPreview(format) {
+    dom.exportPreviewFormat.value = format;
+    dom.exportPreview.value = format === "markdown" ? currentExportMarkdown : currentExportJson;
+  }
+
+  async function copyExportText(text) {
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+      try {
+        await navigator.clipboard.writeText(text);
+        return true;
+      } catch (error) {}
+    }
+
+    dom.exportPreview.focus();
+    dom.exportPreview.select();
+    try {
+      if (document.execCommand("copy")) return true;
+    } catch (error) {}
+
+    dom.exportCopyStatus.textContent = "Copy was blocked. Press Ctrl+C to copy the selected text.";
+    return false;
+  }
+
+  function openExportDialog(preset, opener) {
+    exportDialogOpener = opener;
+    opener.closest(".saved-wheel-dock__item").classList.add("is-exporting");
+    currentExportJson = formatExportJson(preset);
+    currentExportMarkdown = formatExportMarkdown(currentExportJson);
+    dom.exportDialogTitle.textContent = "Export " + preset.name;
+    dom.exportCopyStatus.textContent = "";
+    setExportPreview("json");
+    dom.exportDialog.showModal();
+    window.requestAnimationFrame(function () {
+      dom.exportPreview.focus();
+      dom.exportPreview.select();
+    });
+  }
+
+  function closeExportDialog() {
+    if (dom.exportDialog.open) dom.exportDialog.close();
+  }
+
+  function handleExportDialogClose() {
+    var opener = exportDialogOpener;
+    var row = opener && opener.closest(".saved-wheel-dock__item");
+    exportDialogOpener = null;
+    currentExportJson = "";
+    currentExportMarkdown = "";
+    window.requestAnimationFrame(function () {
+      if (opener && opener.isConnected) opener.focus();
+      if (row) row.classList.remove("is-exporting");
+    });
+  }
+
   function spinWarpFramePath(color, frame) {
     return "spin-vfx/" + color + "/frame" + ("000" + frame).slice(-4) + ".png";
   }
@@ -572,9 +820,10 @@
     var activePreset = state.presets.find(function (preset) {
       return preset.id === state.draftIdentity.presetId;
     });
-    if (activePreset && activePreset.builtinKey === "winner") return "yellow";
-    if (activePreset && activePreset.builtinKey === "oneOne") return "blue";
-    if (activePreset && activePreset.builtinKey === "farfa") return "violet";
+    var themeKey = presetThemeKey(activePreset || state.draftIdentity);
+    if (themeKey === "winner") return "yellow";
+    if (themeKey === "oneOne") return "blue";
+    if (themeKey === "farfa") return "violet";
     return "green";
   }
 
@@ -613,16 +862,17 @@
     }, SPIN_WARP_FRAME_MS);
   }
 
-  function sanitizeDraftIdentity(raw, presets) {
+  function sanitizeDraftIdentity(raw, presets, storedVersion) {
     var presetId = raw && typeof raw.presetId === "string" ? raw.presetId : null;
     var matchingPreset = presetId && presets.find(function (preset) { return preset.id === presetId; });
     if (matchingPreset) {
-      return { presetId: matchingPreset.id, name: matchingPreset.name, iconKey: presetIconKey(matchingPreset) };
+      return { presetId: matchingPreset.id, name: matchingPreset.name, iconKey: presetIconKey(matchingPreset), themeKey: presetThemeKey(matchingPreset) };
     }
     return {
       presetId: null,
       name: cleanText(raw && raw.name, MAX_LABEL_LENGTH) || "Custom Wheel",
-      iconKey: validIconKey(raw && raw.iconKey) || "genex"
+      iconKey: validIconKey(raw && raw.iconKey) || "genex",
+      themeKey: storedVersion === STORAGE_VERSION ? (validThemeKey(raw && raw.themeKey) || "custom") : "custom"
     };
   }
 
@@ -640,13 +890,13 @@
         var defaultPreset = state.presets.find(function (preset) { return preset.builtinKey === "oneOne"; });
         if (defaultPreset) {
           state.entries = cloneEntries(defaultPreset.entries, false);
-          state.draftIdentity = { presetId: defaultPreset.id, name: defaultPreset.name, iconKey: presetIconKey(defaultPreset) };
+          state.draftIdentity = { presetId: defaultPreset.id, name: defaultPreset.name, iconKey: presetIconKey(defaultPreset), themeKey: presetThemeKey(defaultPreset) };
         }
         persistState();
         return;
       }
       var envelope = JSON.parse(raw);
-      if (!envelope || [1, 2, 3, 4, 5, STORAGE_VERSION].indexOf(envelope.version) < 0) {
+      if (!envelope || [1, 2, 3, 4, 5, 6, STORAGE_VERSION].indexOf(envelope.version) < 0) {
         seedDefaultPresets(0);
         initialNotice = "Saved wheel data could not be restored. A blank wheel was opened safely.";
         return;
@@ -679,13 +929,16 @@
             entries: sanitizeEntries(rawPreset.entries),
             updatedAt: typeof rawPreset.updatedAt === "number" ? rawPreset.updatedAt : Date.now(),
             builtinKey: builtinKey,
-            iconKey: builtinKey ? BUILTIN_PRESETS[builtinKey].iconKey : (validIconKey(rawPreset.iconKey) || genericIconForId(presetId))
+            iconKey: builtinKey ? BUILTIN_PRESETS[builtinKey].iconKey : (validIconKey(rawPreset.iconKey) || genericIconForId(presetId)),
+            themeKey: builtinKey
+              ? builtinKey
+              : (envelope.version === STORAGE_VERSION ? (validThemeKey(rawPreset.themeKey) || "custom") : "custom")
           });
           return presets;
         }, []);
       }
       seedDefaultPresets(Number(envelope.defaultSeedVersion) || 0);
-      state.draftIdentity = sanitizeDraftIdentity(envelope.draft && envelope.draft.identity, state.presets);
+      state.draftIdentity = sanitizeDraftIdentity(envelope.draft && envelope.draft.identity, state.presets, envelope.version);
       persistState();
     } catch (error) {
       state.entries = [];
@@ -713,7 +966,8 @@
           entries: cloneEntries(preset.entries, false),
           updatedAt: preset.updatedAt,
           builtinKey: preset.builtinKey || null,
-          iconKey: presetIconKey(preset)
+          iconKey: presetIconKey(preset),
+          themeKey: presetThemeKey(preset)
         };
       })
     };
@@ -894,6 +1148,7 @@
         // Add stable identity metadata without replacing a user's edited built-in contents or name.
         existing.builtinKey = approved.builtinKey;
         existing.iconKey = BUILTIN_PRESETS[approved.builtinKey].iconKey;
+        existing.themeKey = approved.builtinKey;
       } else {
         state.presets.push({
           id: createId("preset"),
@@ -901,7 +1156,8 @@
           entries: approved.entries,
           updatedAt: Date.now(),
           builtinKey: approved.builtinKey,
-          iconKey: BUILTIN_PRESETS[approved.builtinKey].iconKey
+          iconKey: BUILTIN_PRESETS[approved.builtinKey].iconKey,
+          themeKey: approved.builtinKey
         });
       }
     });
@@ -915,6 +1171,46 @@
     var normalized = normalizeName(name);
     return state.presets.find(function (preset) {
       return normalizeName(preset.name) === normalized;
+    });
+  }
+
+  function makeNumberedImportName(baseName) {
+    var number = 2;
+    while (true) {
+      var suffix = " " + number;
+      if (baseName.length + suffix.length > MAX_LABEL_LENGTH) return null;
+      var candidate = baseName + suffix;
+      if (!findPresetByName(candidate)) return candidate;
+      number += 1;
+    }
+  }
+
+  function usedInternalIds() {
+    var used = new Set();
+    state.presets.forEach(function (preset) {
+      used.add(preset.id);
+      preset.entries.forEach(function (entry) { used.add(entry.id); });
+    });
+    state.entries.forEach(function (entry) { used.add(entry.id); });
+    return used;
+  }
+
+  function freshInternalId(prefix, used) {
+    var id = createId(prefix);
+    var collisions = 0;
+    while (used.has(id)) {
+      collisions += 1;
+      id = collisions < 8 ? createId(prefix) : (prefix || "item") + "-" + Date.now() + "-" + collisions;
+    }
+    used.add(id);
+    return id;
+  }
+
+  function materializeImportedEntries(entries, used) {
+    return entries.map(function (entry) {
+      var imported = deepClone(entry);
+      imported.id = freshInternalId("entry", used);
+      return imported;
     });
   }
 
@@ -1075,12 +1371,12 @@
     };
   }
 
-  // The palette a wheel paints with follows the loaded preset. Built-ins get their own
-  // hardcoded ramp; anything else — including an unsaved draft — shares the jewel rotation.
+  // Palette identity is independent from pinned built-in identity so imported ordinary
+  // wheels can retain an exported theme without becoming protected presets.
   function activePalette() {
     var presetId = state.draftIdentity && state.draftIdentity.presetId;
     var preset = presetId && state.presets.find(function (candidate) { return candidate.id === presetId; });
-    var key = preset && preset.builtinKey;
+    var key = presetThemeKey(preset || state.draftIdentity);
     return (key && PRESET_PALETTES[key]) || DEFAULT_PALETTE;
   }
 
@@ -1614,6 +1910,7 @@
         presetActionButton("Load", "load", preset.name),
         presetActionButton("Rename", "rename", preset.name),
         presetActionButton("Duplicate", "duplicate", preset.name),
+        presetActionButton("Export", "export", preset.name),
         deleteButton
       );
       if (state.draftIdentity.presetId === preset.id) actions.appendChild(presetActionButton("Save", "save", preset.name));
@@ -1919,6 +2216,61 @@
     renderComposer();
   }
 
+  function focusPresetIcon(presetId) {
+    window.requestAnimationFrame(function () {
+      var row = Array.from(dom.presetList.children).find(function (candidate) {
+        return candidate.dataset.presetId === presetId;
+      });
+      var button = row && row.querySelector(".saved-wheel-dock__icon");
+      if (button) button.focus();
+    });
+  }
+
+  function commitWheelImport(candidate, existingPreset, resolvedName) {
+    var used = usedInternalIds();
+    var importedEntries = materializeImportedEntries(candidate.entries, used);
+    var preset;
+
+    if (existingPreset) {
+      preset = existingPreset;
+      preset.entries = importedEntries;
+      preset.updatedAt = Date.now();
+      if (!preset.builtinKey) {
+        preset.iconKey = candidate.iconKey;
+        preset.themeKey = candidate.themeKey;
+      }
+    } else {
+      preset = {
+        id: freshInternalId("preset", used),
+        name: resolvedName,
+        entries: importedEntries,
+        updatedAt: Date.now(),
+        builtinKey: null,
+        iconKey: candidate.iconKey,
+        themeKey: candidate.themeKey
+      };
+      state.presets.push(preset);
+    }
+
+    state.entries = cloneEntries(preset.entries, false);
+    state.draftIdentity = {
+      presetId: preset.id,
+      name: preset.name,
+      iconKey: presetIconKey(preset),
+      themeKey: presetThemeKey(preset)
+    };
+    clearRigging();
+    importCloseAction = "success";
+    if (dom.importDialog.open) dom.importDialog.close();
+    if (dom.newWheelDialog.open) dom.newWheelDialog.close();
+    persistState();
+    renderAll();
+    setStatus(state.storageEnabled
+      ? preset.name + " imported and ready to use."
+      : preset.name + " imported for this session. Browser storage is unavailable.", state.storageEnabled ? "info" : "warning");
+    focusPresetIcon(preset.id);
+  }
+
   function commitChange(message) {
     persistState();
     renderAll();
@@ -1951,11 +2303,32 @@
 
     dom.confirmMessage.textContent = options.message;
     dom.confirmAction.textContent = options.confirmLabel || "Confirm";
+    dom.confirmCancel.textContent = options.cancelLabel || "Cancel";
     dom.confirmDialog.returnValue = "";
     dom.confirmDialog.showModal();
 
     return new Promise(function (resolve) {
-      pendingConfirmation = resolve;
+      pendingConfirmation = function (returnValue) { resolve(returnValue === "confirm"); };
+    });
+  }
+
+  function requestImportConflict(name) {
+    var message = "A saved wheel named “" + name + "” already exists. Overwrite it?";
+    if (!dom.confirmDialog || typeof dom.confirmDialog.showModal !== "function") {
+      return Promise.resolve(window.confirm(message) ? "overwrite" : "numbered");
+    }
+
+    dom.confirmMessage.textContent = message;
+    dom.confirmAction.textContent = "Overwrite wheel";
+    dom.confirmCancel.textContent = "Create numbered wheel";
+    dom.confirmDialog.returnValue = "";
+    dom.confirmDialog.showModal();
+    return new Promise(function (resolve) {
+      pendingConfirmation = function (returnValue) {
+        if (returnValue === "confirm") resolve("overwrite");
+        else if (returnValue === "cancel") resolve("numbered");
+        else resolve("cancelled");
+      };
     });
   }
 
@@ -1963,7 +2336,7 @@
     if (!pendingConfirmation) return;
     var resolve = pendingConfirmation;
     pendingConfirmation = null;
-    resolve(dom.confirmDialog.returnValue === "confirm");
+    resolve(dom.confirmDialog.returnValue);
   }
 
   function randomIndex(maximum) {
@@ -2971,6 +3344,90 @@
     window.requestAnimationFrame(function () { dom.newWheelName.select(); });
   });
 
+  function openImportDialog(clearContents) {
+    if (clearContents) {
+      dom.importWheelText.value = "";
+      dom.importWheelValidation.textContent = "";
+    }
+    importCloseAction = null;
+    if (dom.newWheelDialog.open) dom.newWheelDialog.close();
+    dom.importDialog.showModal();
+    window.requestAnimationFrame(function () { dom.importWheelText.focus(); });
+  }
+
+  function closeImportToNewWheel() {
+    importCloseAction = "return-new";
+    dom.importDialog.close();
+  }
+
+  function handleImportDialogClose() {
+    var action = importCloseAction;
+    importCloseAction = null;
+    if (action !== "return-new") return;
+    dom.newWheelDialog.showModal();
+    window.requestAnimationFrame(function () { dom.importWheelOpen.focus(); });
+  }
+
+  function showImportFailure(message) {
+    if (!dom.importDialog.open) openImportDialog(false);
+    dom.importWheelValidation.textContent = message;
+    window.requestAnimationFrame(function () { dom.importWheelText.focus(); });
+  }
+
+  dom.importWheelOpen.addEventListener("click", function () { openImportDialog(true); });
+  dom.importWheelCancel.addEventListener("click", closeImportToNewWheel);
+  dom.importWheelText.addEventListener("input", function () {
+    if (dom.importWheelValidation.textContent) dom.importWheelValidation.textContent = "";
+  });
+  dom.importDialog.addEventListener("keydown", function (event) {
+    if (event.key !== "Escape") return;
+    event.preventDefault();
+    closeImportToNewWheel();
+  });
+  dom.importDialog.addEventListener("close", handleImportDialogClose);
+  dom.importWheelForm.addEventListener("submit", async function (event) {
+    event.preventDefault();
+    var candidate;
+    try {
+      candidate = validateWheelImport(dom.importWheelText.value);
+    } catch (error) {
+      showImportFailure(error && error.name === "WheelImportError" ? error.message : "This wheel export could not be imported.");
+      return;
+    }
+
+    var conflict = findPresetByName(candidate.name);
+    if (!conflict) {
+      if (state.presets.length >= 100) {
+        showImportFailure("Delete a saved wheel before importing another.");
+        return;
+      }
+      commitWheelImport(candidate, null, candidate.name);
+      return;
+    }
+
+    importCloseAction = "conflict";
+    dom.importDialog.close();
+    var conflictChoice = await requestImportConflict(candidate.name);
+    if (conflictChoice === "cancelled") {
+      openImportDialog(false);
+      return;
+    }
+    if (conflictChoice === "overwrite") {
+      commitWheelImport(candidate, conflict, conflict.name);
+      return;
+    }
+    if (state.presets.length >= 100) {
+      showImportFailure("Delete a saved wheel before importing another.");
+      return;
+    }
+    var numberedName = makeNumberedImportName(candidate.name);
+    if (!numberedName) {
+      showImportFailure("This wheel name is too long to create a numbered copy.");
+      return;
+    }
+    commitWheelImport(candidate, null, numberedName);
+  });
+
   dom.newWheelCancel.addEventListener("click", function () { dom.newWheelDialog.close(); });
   dom.newWheelForm.addEventListener("submit", function (event) {
     event.preventDefault();
@@ -2992,11 +3449,12 @@
       entries: [],
       updatedAt: Date.now(),
       builtinKey: null,
-      iconKey: selectedIcon
+      iconKey: selectedIcon,
+      themeKey: "custom"
     };
     state.presets.push(created);
     state.entries = [];
-    state.draftIdentity = { presetId: created.id, name: created.name, iconKey: created.iconKey };
+    state.draftIdentity = { presetId: created.id, name: created.name, iconKey: created.iconKey, themeKey: created.themeKey };
     clearRigging();
     dom.newWheelDialog.close();
     commitChange(name + " created and ready to build.");
@@ -3027,7 +3485,7 @@
       });
       if (!canLoad) return;
       state.entries = cloneEntries(preset.entries, false);
-      state.draftIdentity = { presetId: preset.id, name: preset.name, iconKey: presetIconKey(preset) };
+      state.draftIdentity = { presetId: preset.id, name: preset.name, iconKey: presetIconKey(preset), themeKey: presetThemeKey(preset) };
       clearRigging();
       commitChange(preset.name + " loaded.");
       emitSoundEvent("presetLoaded");
@@ -3039,6 +3497,11 @@
       preset.entries = cloneEntries(state.entries, false);
       preset.updatedAt = Date.now();
       commitChange(preset.name + " saved.");
+      return;
+    }
+
+    if (action === "export") {
+      openExportDialog(preset, button);
       return;
     }
 
@@ -3072,7 +3535,8 @@
         entries: cloneEntries(preset.entries, true),
         updatedAt: Date.now(),
         builtinKey: null,
-        iconKey: preset.builtinKey ? genericIconForId(copyId) : presetIconKey(preset)
+        iconKey: preset.builtinKey ? genericIconForId(copyId) : presetIconKey(preset),
+        themeKey: preset.builtinKey ? "custom" : presetThemeKey(preset)
       });
       commitChange(copyName + " created.");
       return;
@@ -3090,7 +3554,7 @@
       if (!shouldDelete) return;
       state.presets = state.presets.filter(function (candidate) { return candidate.id !== preset.id; });
       if (state.draftIdentity.presetId === preset.id) {
-        state.draftIdentity = { presetId: null, name: "Custom Wheel", iconKey: presetIconKey(preset) };
+        state.draftIdentity = { presetId: null, name: "Custom Wheel", iconKey: presetIconKey(preset), themeKey: presetThemeKey(preset) };
       }
       commitChange(preset.name + " deleted.");
     }
@@ -3113,6 +3577,27 @@
   });
   dom.confirmDialog.addEventListener("close", handleDialogClose);
   dom.rewardDialog.addEventListener("close", handleRewardDialogClose);
+  dom.exportPreviewFormat.addEventListener("change", function () {
+    setExportPreview(dom.exportPreviewFormat.value);
+    dom.exportCopyStatus.textContent = "";
+  });
+  dom.copyExportJson.addEventListener("click", async function () {
+    setExportPreview("json");
+    dom.exportCopyStatus.textContent = "";
+    if (await copyExportText(currentExportJson)) dom.exportCopyStatus.textContent = "JSON copied.";
+  });
+  dom.copyExportMarkdown.addEventListener("click", async function () {
+    setExportPreview("markdown");
+    dom.exportCopyStatus.textContent = "";
+    if (await copyExportText(currentExportMarkdown)) dom.exportCopyStatus.textContent = "Markdown copied.";
+  });
+  dom.exportDialogClose.addEventListener("click", closeExportDialog);
+  dom.exportDialog.addEventListener("keydown", function (event) {
+    if (event.key !== "Escape") return;
+    event.preventDefault();
+    closeExportDialog();
+  });
+  dom.exportDialog.addEventListener("close", handleExportDialogClose);
 
   window.addEventListener("click", function (event) {
     if (!dom.adminPopover.hidden && !event.target.closest(".utility-chips--left")) {

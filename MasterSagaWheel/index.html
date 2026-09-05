@@ -208,8 +208,44 @@
       <label class="field"><span>Name</span><input id="new-wheel-name" type="text" maxlength="48" autocomplete="off" placeholder="Custom Wheel" required></label>
       <fieldset class="preset-icon-picker"><legend>Icon</legend><label><input type="radio" name="newWheelIcon" value="condemned" checked><img src="Condemned_Darklord-Icon-Master_Duel.png" alt="Condemned Darklord"></label><label><input type="radio" name="newWheelIcon" value="eldlich"><img src="Eldlich_the_Golden_Lord-Icon-Master_Duel.png" alt="Eldlich the Golden Lord"></label><label><input type="radio" name="newWheelIcon" value="genex"><img src="Genex_Controller-Icon-Master_Duel.png" alt="Genex Controller"></label></fieldset>
       <p class="dialog-validation" id="new-wheel-validation" role="alert"></p>
-      <div class="dialog-actions"><button class="dialog-button dialog-button--cancel" type="button" value="cancel" id="new-wheel-cancel">Cancel</button><button class="dialog-button dialog-button--confirm" type="submit">Create wheel</button></div>
+      <div class="dialog-actions"><button class="dialog-button" type="button" id="import-wheel-open">Import wheel</button><button class="dialog-button dialog-button--cancel" type="button" value="cancel" id="new-wheel-cancel">Cancel</button><button class="dialog-button dialog-button--confirm" type="submit">Create wheel</button></div>
     </form>
+  </dialog>
+
+  <dialog class="wheel-dialog wheel-dialog--import" id="import-dialog" aria-labelledby="import-dialog-title" aria-describedby="import-dialog-note">
+    <form class="import-dialog__content" id="import-wheel-form">
+      <h2 id="import-dialog-title">Import wheel</h2>
+      <p class="import-dialog__note" id="import-dialog-note">Paste a Master Saga Wheel export as JSON or a fenced json Markdown block.</p>
+      <p class="sr-only" id="import-format-description">Both accepted forms contain the same JSON.</p>
+      <label class="import-dialog__field" for="import-wheel-text">Wheel export</label>
+      <textarea id="import-wheel-text" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="Paste exported JSON or a fenced json Markdown block" aria-describedby="import-dialog-note import-format-description import-wheel-validation"></textarea>
+      <p class="dialog-validation" id="import-wheel-validation" role="alert"></p>
+      <div class="dialog-actions">
+        <button class="dialog-button dialog-button--cancel" id="import-wheel-cancel" type="button">Cancel</button>
+        <button class="dialog-button dialog-button--confirm" type="submit">Import wheel</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="wheel-dialog wheel-dialog--export" id="export-dialog" aria-labelledby="export-dialog-title">
+    <section class="export-dialog__content">
+      <h2 id="export-dialog-title">Export wheel</h2>
+      <p class="export-dialog__note">This export contains the saved version of this wheel.</p>
+      <label class="export-dialog__format">
+        <span>Preview format</span>
+        <select id="export-preview-format">
+          <option value="json">JSON</option>
+          <option value="markdown">Markdown</option>
+        </select>
+      </label>
+      <textarea id="export-preview" readonly spellcheck="false" aria-label="Saved wheel export preview"></textarea>
+      <p class="export-dialog__status" id="export-copy-status" aria-live="polite"></p>
+      <div class="dialog-actions">
+        <button class="dialog-button" id="copy-export-json" type="button">Copy JSON</button>
+        <button class="dialog-button" id="copy-export-markdown" type="button">Copy Markdown</button>
+        <button class="dialog-button dialog-button--cancel" id="export-dialog-close" type="button">Close</button>
+      </div>
+    </section>
   </dialog>
 
   <dialog class="confirm-dialog" id="confirm-dialog" aria-label="Warning" aria-describedby="confirm-message">
@@ -217,7 +253,7 @@
       <p class="dialog-kicker dialog-kicker--warning">Warning!</p>
       <p id="confirm-message"></p>
       <div class="dialog-actions">
-        <button class="dialog-button dialog-button--cancel" value="cancel">Cancel</button>
+        <button class="dialog-button dialog-button--cancel" id="confirm-cancel" value="cancel">Cancel</button>
         <button class="dialog-button dialog-button--confirm" id="confirm-action" value="confirm">Confirm</button>
       </div>
     </form>
