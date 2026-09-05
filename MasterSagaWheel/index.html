@@ -215,9 +215,8 @@
   <dialog class="wheel-dialog wheel-dialog--import" id="import-dialog" aria-labelledby="import-dialog-title" aria-describedby="import-dialog-note">
     <form class="import-dialog__content" id="import-wheel-form">
       <h2 id="import-dialog-title">Import wheel</h2>
-      <p class="import-dialog__note" id="import-dialog-note">Paste a Master Saga Wheel export as raw JSON.</p>
-      <label class="import-dialog__field" for="import-wheel-text">Wheel export</label>
-      <textarea id="import-wheel-text" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="Paste exported JSON" aria-describedby="import-dialog-note import-wheel-validation"></textarea>
+      <p class="import-dialog__note" id="import-dialog-note">Paste exported settings below</p>
+      <textarea id="import-wheel-text" aria-label="Wheel export" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="Paste export here" aria-describedby="import-dialog-note import-wheel-validation"></textarea>
       <p class="dialog-validation" id="import-wheel-validation" role="alert"></p>
       <div class="dialog-actions">
         <button class="dialog-button dialog-button--cancel" id="import-wheel-cancel" type="button">Cancel</button>

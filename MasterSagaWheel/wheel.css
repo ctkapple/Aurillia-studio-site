@@ -2577,8 +2577,8 @@ summary:focus-visible {
 .import-dialog__content { padding: 26px; }
 .import-dialog__content h2 { margin: 0; }
 .import-dialog__note { margin: 10px 0 0; color: var(--muted-bright); font-size: .72rem; line-height: 1.55; }
-.import-dialog__field { display: block; margin-top: 20px; color: var(--muted-bright); font-size: .62rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
-.import-dialog__content textarea { width: 100%; min-height: min(40vh, 360px); margin-top: 7px; padding: 14px; resize: vertical; border: 1px solid var(--line); border-radius: 10px; color: var(--ink); background: rgba(2, 5, 11, .76); font: .72rem/1.55 ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace; tab-size: 2; }
+.import-dialog__content textarea { width: 100%; height: 64px; margin-top: 14px; padding: 10px 14px; resize: none; overflow-y: scroll; scrollbar-width: none; -ms-overflow-style: none; border: 1px solid var(--line); border-radius: 10px; color: var(--ink); background: rgba(2, 5, 11, .76); font: .72rem/1.55 ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace; tab-size: 2; }
+.import-dialog__content textarea::-webkit-scrollbar { display: none; }
 .import-dialog__content textarea:focus { border-color: var(--line-bright); outline: 2px solid rgba(61, 229, 255, .16); outline-offset: 2px; }
 .import-dialog__content .dialog-actions { flex-wrap: wrap; margin-top: 12px; }
 .wheel-dialog--export { width: min(420px, calc(100vw - 48px)); }
