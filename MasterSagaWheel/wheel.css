@@ -1399,6 +1399,16 @@ summary:focus-visible {
   border-color: rgba(61, 229, 255, 0.46);
 }
 
+.dialog-button--danger {
+  border-color: rgba(255, 111, 136, 0.55);
+  color: #ff6f88;
+}
+
+.dialog-button--danger:hover {
+  border-color: rgba(255, 111, 136, 0.8);
+  background: linear-gradient(145deg, rgba(105, 37, 48, 0.76), rgba(22, 12, 15, 0.96));
+}
+
 .is-cinematic {
   min-width: 0;
   overflow: hidden;

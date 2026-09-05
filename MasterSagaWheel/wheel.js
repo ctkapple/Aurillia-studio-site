@@ -2315,18 +2315,20 @@
   }
 
   function requestImportConflict(name) {
-    var message = "A saved wheel named “" + name + "” already exists. Overwrite it?";
+    var message = "A saved wheel named “" + name + "” already exists.";
     if (!dom.confirmDialog || typeof dom.confirmDialog.showModal !== "function") {
-      return Promise.resolve(window.confirm(message) ? "overwrite" : "numbered");
+      return Promise.resolve(window.confirm(message + " Overwrite it?") ? "overwrite" : "numbered");
     }
 
     dom.confirmMessage.textContent = message;
-    dom.confirmAction.textContent = "Overwrite wheel";
-    dom.confirmCancel.textContent = "Create numbered wheel";
+    dom.confirmAction.textContent = "Overwrite Wheel";
+    dom.confirmAction.classList.add("dialog-button--danger");
+    dom.confirmCancel.textContent = "Create new wheel";
     dom.confirmDialog.returnValue = "";
     dom.confirmDialog.showModal();
     return new Promise(function (resolve) {
       pendingConfirmation = function (returnValue) {
+        dom.confirmAction.classList.remove("dialog-button--danger");
         if (returnValue === "confirm") resolve("overwrite");
         else if (returnValue === "cancel") resolve("numbered");
         else resolve("cancelled");
