@@ -121,7 +121,7 @@ summary:focus-visible {
   inset: 0;
   transform: translate3d(var(--bg-x, 0px), var(--bg-y, 0px), 0) scale(var(--bg-scale, 1.18));
   transform-origin: center center;
-  filter: blur(11px) saturate(1.05) brightness(.56);
+  filter: blur(9px) saturate(1.05) brightness(.56);
   will-change: transform;
 }
 
