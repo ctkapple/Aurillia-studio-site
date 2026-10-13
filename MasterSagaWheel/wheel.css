@@ -383,6 +383,14 @@ summary:focus-visible {
   transform-origin: 300px 300px;
 }
 
+/* Without its own layer, every rotation step repaints the whole SVG, re-running every slice
+   icon's drop-shadow each frame. Promoted only while it moves: at rest it paints as plain
+   vector, so the settled wheel is pixel-for-pixel what it was. */
+.is-spinning .wheel__rotor,
+.is-settling .wheel__rotor {
+  will-change: transform;
+}
+
 .wheel-slice {
   transition: opacity 300ms ease, filter 420ms ease;
 }
@@ -1511,6 +1519,32 @@ summary:focus-visible {
   }
 }
 
+/* Opt-in performance mode (?perf=lite). Backdrop blurs re-sample whatever animates behind
+   them every frame, and filters on moving or freshly painted art re-run their blur, so these
+   are the effects that cost the most on a weak GPU. Nothing here changes the default look. */
+.perf-lite *,
+.perf-lite *::before,
+.perf-lite *::after,
+.perf-lite .wheel-dialog::backdrop {
+  backdrop-filter: none !important;
+}
+
+.perf-lite .ambient-field__bloom,
+.perf-lite .ambient-field__stars {
+  animation: none;
+}
+
+.perf-lite .wheel,
+.perf-lite .wheel__rim,
+.perf-lite .wheel-slice__icon,
+.perf-lite .wheel-slice.is-winner .wheel-slice__shape,
+.perf-lite .spin-warp,
+.perf-lite .snow-flake__art,
+.perf-lite .winner-particle__art,
+.perf-lite .hero-unit {
+  filter: none;
+}
+
 /* Reward controls stay route-local and intentionally desktop-first. */
 .side-rail--left {
   overflow-y: auto;
@@ -1989,19 +2023,28 @@ summary:focus-visible {
   position: absolute;
   width: var(--particle-size);
   height: var(--particle-size);
-  border-radius: 18%;
-  object-fit: contain;
   opacity: 0;
-  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, .58))
-    drop-shadow(0 0 10px color-mix(in srgb, var(--winner-accent, #3de5ff) 55%, transparent));
   animation: reward-burst var(--particle-duration, 1600ms) linear var(--particle-delay, 0ms) forwards;
 }
 
-.winner-particle--pack {
+/* The shadows sit on the art, not on the animated token: a filter on an element that is
+   itself being transformed gets re-blurred every frame, while one on its child is painted
+   into the token's layer once. */
+.winner-particle__art {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 18%;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, .58))
+    drop-shadow(0 0 10px color-mix(in srgb, var(--winner-accent, #3de5ff) 55%, transparent));
+}
+
+.winner-particle--pack .winner-particle__art {
   object-fit: cover;
 }
 
-.winner-particle--pack { object-position: 50% 30%; }
+.winner-particle--pack .winner-particle__art { object-position: 50% 30%; }
 
 /* Two stages with their own easing: thrown out of the rim, then falling away. A single
    ease across an up-then-down path is what made the old shower read as stepped. */
@@ -2086,15 +2129,22 @@ summary:focus-visible {
   top: 0;
   width: var(--flake-size);
   height: var(--flake-size);
-  border-radius: 16%;
-  object-fit: contain;
   opacity: 0;
-  filter: drop-shadow(0 3px 5px rgba(0, 0, 0, .5));
   animation: reward-snow var(--flake-duration, 10s) linear var(--flake-delay, 0ms) infinite;
 }
 
-.snow-flake--pack { object-fit: cover; }
-.snow-flake--pack { object-position: 50% 30%; }
+/* Shadow on the art rather than the falling wrapper, for the same reason as the burst. */
+.snow-flake__art {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 16%;
+  object-fit: contain;
+  filter: drop-shadow(0 3px 5px rgba(0, 0, 0, .5));
+}
+
+.snow-flake--pack .snow-flake__art { object-fit: cover; }
+.snow-flake--pack .snow-flake__art { object-position: 50% 30%; }
 
 @keyframes reward-snow {
   0% { opacity: 0; transform: translate3d(0, -14vh, 0) rotate(0deg); }

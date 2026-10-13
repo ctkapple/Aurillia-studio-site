@@ -2621,10 +2621,15 @@
       for (var index = 0; index < SNOW_COUNT; index += 1) {
         var item = weightedParticlePick(pool);
         var definition = REWARDS[item.type];
-        var flake = document.createElement("img");
+        // The wrapper carries the fall and the inner image carries the shadow, so the shadow
+        // is rasterised once instead of being re-blurred by the compositor every frame.
+        var flake = document.createElement("span");
         flake.className = "snow-flake snow-flake--" + (definition.crop || item.type);
-        flake.src = definition.image;
-        flake.alt = "";
+        var flakeArt = document.createElement("img");
+        flakeArt.className = "snow-flake__art";
+        flakeArt.src = definition.image;
+        flakeArt.alt = "";
+        flake.appendChild(flakeArt);
         flake.style.left = (Math.random() * 100).toFixed(2) + "%";
         flake.style.setProperty("--flake-size", (16 + rewardTierScale(item) * 26).toFixed(0) + "px");
         flake.style.setProperty("--flake-sway", ((Math.random() - .5) * 90).toFixed(0) + "px");
@@ -2704,10 +2709,14 @@
 
     particles.sort(function () { return Math.random() - .5; }).forEach(function (item, index) {
       var definition = REWARDS[item.type];
-      var token = document.createElement("img");
+      // Same split as the snow: the wrapper animates, the inner image keeps the shadows.
+      var token = document.createElement("span");
       token.className = "winner-particle winner-particle--" + (definition.crop || item.type);
-      token.src = definition.image;
-      token.alt = "";
+      var tokenArt = document.createElement("img");
+      tokenArt.className = "winner-particle__art";
+      tokenArt.src = definition.image;
+      tokenArt.alt = "";
+      token.appendChild(tokenArt);
       token.style.setProperty("--particle-size", ((24 + rewardTierScale(item) * 34) * unit).toFixed(0) + "px");
 
       var emitAngle = -90 + (Math.random() - .5) * 2 * halfSlice;
@@ -3076,6 +3085,7 @@
       var settleFrom = state.rotation;
       var offset = normalizeAngle(settleFrom);
       var settleTo = offset > 180 ? settleFrom + (360 - offset) : settleFrom - offset;
+      document.body.classList.add("is-settling");
       await animateValue(0, 1, EXIT_SETTLE_MS, easeOutCubic, function (value) {
         setRotation(settleFrom + (settleTo - settleFrom) * value);
       });
@@ -3088,7 +3098,7 @@
     state.spinMotion = null;
     clearSpinWarp();
     clearSnow();
-    document.body.classList.remove("is-result", "is-revealing", "has-winner", "is-spinning");
+    document.body.classList.remove("is-result", "is-revealing", "has-winner", "is-spinning", "is-settling");
     document.body.style.removeProperty("--winner-glow");
     document.body.style.removeProperty("--winner-accent");
     setCinematic(false);
@@ -3751,6 +3761,13 @@
     window.addEventListener("resize", apply);
 
     apply();
+  }
+
+  // Opt-in lite rendering for weak GPUs: ?perf=lite strips the heaviest decorative effects.
+  // Off by default, and separate from prefers-reduced-motion, which stays an accessibility
+  // setting rather than a performance one.
+  if (/(?:^|[?&])perf=lite(?:&|$)/.test(window.location.search)) {
+    document.documentElement.classList.add("perf-lite");
   }
 
   hydrateState();
