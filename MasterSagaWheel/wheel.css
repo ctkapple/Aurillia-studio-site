@@ -1500,25 +1500,6 @@ summary:focus-visible {
   to { transform: scale(1.1); opacity: 0.17; }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    scroll-behavior: auto !important;
-    animation-duration: 0.001ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.001ms !important;
-  }
-
-  /* The burst is celebration only; with animations forced to zero it would otherwise build
-     twenty tokens that flash into their end state and vanish. */
-  .winner-particles,
-  .snow-field,
-  .spin-warp {
-    display: none;
-  }
-}
-
 /* Opt-in performance mode (?perf=lite). Backdrop blurs re-sample whatever animates behind
    them every frame, and filters on moving or freshly painted art re-run their blur, so these
    are the effects that cost the most on a weak GPU. Nothing here changes the default look. */

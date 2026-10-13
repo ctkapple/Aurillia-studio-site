@@ -846,9 +846,9 @@
     if (dom.spinWarp) dom.spinWarp.classList.remove("is-active");
   }
 
-  function playSpinWarp(reducedMotion) {
+  function playSpinWarp() {
     clearSpinWarp();
-    if (reducedMotion || !dom.spinWarp) return;
+    if (!dom.spinWarp) return;
 
     var color = spinWarpColor();
     var frame = 0;
@@ -2395,7 +2395,6 @@
   }
 
   function triggerSphealFeedback(strength) {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     var visualStrength = Math.max(0.12, Math.min(1, strength));
     if (typeof dom.sphealReactor.animate === "function") {
       dom.sphealReactor.getAnimations().forEach(function (animation) { animation.cancel(); });
@@ -2541,7 +2540,6 @@
   }
 
   function tickPointer() {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     if (typeof dom.wheelPointer.animate === "function") {
       dom.wheelPointer.animate([
         { transform: "translateX(-50%) rotate(0deg)" },
@@ -2609,9 +2607,8 @@
   // The burst is the reaction to winning; the snow is the state you sit in afterwards. Both
   // draw from the same weighted pool, so what drifts past is still what you actually won.
   // It loops for as long as the result is up, because the result no longer times out.
-  function startSnow(entry, reducedMotion) {
+  function startSnow(entry) {
     clearSnow();
-    if (reducedMotion) return;
     state.snowTimer = window.setTimeout(function () {
       state.snowTimer = 0;
       if (state.phase !== "result") return;
@@ -2689,7 +2686,6 @@
   // do when tokens overlap each other and the plate.
   function createWinnerParticles(entry, sliceCount) {
     clearWinnerParticles();
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     var groups = particleComponents(entry);
     var total = PARTICLE_COUNT;
     var primaryCount = groups.optional.length ? Math.round(total * .6) : total;
@@ -2998,35 +2994,24 @@
     var sliceAngle = 360 / snapshot.length;
     var winnerCenter = -90 + (winnerIndex + 0.5) * sliceAngle;
     var desiredRotation = normalizeAngle(-90 - winnerCenter);
-    var reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     state.phase = "spinning";
     state.spinSnapshot = snapshot;
     state.winnerIndex = winnerIndex;
     setCinematic(true);
     document.body.classList.add("is-spinning");
-    playSpinWarp(reducedMotion);
+    playSpinWarp();
     dom.spinButton.disabled = false;
     dom.spinButton.setAttribute("aria-label", "Wheel spinning");
     dom.spinButton.focus();
     renderWheel(snapshot, null);
     emitSoundEvent("spinStart", { entryCount: snapshot.length, rigged: forcedIndex >= 0 });
 
-    var finalRotation;
-    if (reducedMotion) {
-      finalRotation = state.rotation + normalizeAngle(desiredRotation - normalizeAngle(state.rotation));
-      await delay(90);
-      setRotation(finalRotation);
-      await delay(130);
-    } else {
-      var targetRotation = state.rotation + BASE_EXTRA_TURNS * 360
-        + normalizeAngle(desiredRotation - normalizeAngle(state.rotation));
-      await runSpinMotion(sliceAngle, targetRotation);
-      state.phase = "landing";
-      document.body.classList.remove("is-spinning");
-      dom.spinButton.setAttribute("aria-label", "Wheel landing");
-      finalRotation = state.rotation;
-    }
+    var targetRotation = state.rotation + BASE_EXTRA_TURNS * 360
+      + normalizeAngle(desiredRotation - normalizeAngle(state.rotation));
+    await runSpinMotion(sliceAngle, targetRotation);
+    dom.spinButton.setAttribute("aria-label", "Wheel landing");
+    var finalRotation = state.rotation;
 
     state.phase = "landing";
     document.body.classList.remove("is-spinning");
@@ -3037,7 +3022,7 @@
     emitSoundEvent("winnerLand", { entry: cloneEntries([winner], false)[0], index: winnerIndex });
 
     // A brief beat to register the stop, then the reveal takes over immediately.
-    await delay(reducedMotion ? 60 : LANDING_HOLD_MS);
+    await delay(LANDING_HOLD_MS);
     // The losing slices desaturate rather than being covered, so the wheel stays on screen
     // and the result reads as coming out of the slice that produced it.
     document.body.classList.add("is-revealing");
@@ -3050,11 +3035,11 @@
     // reads as coming from the slice rather than arriving on top of it.
     createWinnerParticles(winner, snapshot.length);
     emitSoundEvent("winnerReveal", { entry: cloneEntries([winner], false)[0], index: winnerIndex });
-    if (!reducedMotion) await delay(PLATE_UNFURL_DELAY_MS);
+    await delay(PLATE_UNFURL_DELAY_MS);
     if (state.phase !== "result") return;
     document.body.classList.add("is-result");
     focusResult();
-    startSnow(winner, reducedMotion);
+    startSnow(winner);
     audioController.playMusic(0).then(function (musicDuration) {
       if (state.phase === "result") scheduleSnowStop(musicDuration || MUSIC_FALLBACK_MS);
     });
@@ -3067,29 +3052,26 @@
   async function exitResult() {
     if (state.phase !== "result") return;
     var winner = state.spinSnapshot && state.spinSnapshot[state.winnerIndex];
-    var reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     state.phase = "exiting";
     stopSnow();
     clearWinnerParticles();
     emitSoundEvent("exitResult", { entry: winner ? cloneEntries([winner], false)[0] : null });
     document.body.classList.remove("is-result");
 
-    if (!reducedMotion) {
-      await delay(EXIT_PLATE_MS);
-      document.body.classList.remove("is-revealing");
-      // Dropped off the existing nodes so the slices ease back to full colour across the
-      // settle. Waiting for the rebuild at the end of exit would restore them in one frame.
-      dom.rotor.querySelectorAll(".wheel-slice").forEach(function (group) {
-        group.classList.remove("is-dimmed", "is-winner");
-      });
-      var settleFrom = state.rotation;
-      var offset = normalizeAngle(settleFrom);
-      var settleTo = offset > 180 ? settleFrom + (360 - offset) : settleFrom - offset;
-      document.body.classList.add("is-settling");
-      await animateValue(0, 1, EXIT_SETTLE_MS, easeOutCubic, function (value) {
-        setRotation(settleFrom + (settleTo - settleFrom) * value);
-      });
-    }
+    await delay(EXIT_PLATE_MS);
+    document.body.classList.remove("is-revealing");
+    // Dropped off the existing nodes so the slices ease back to full colour across the
+    // settle. Waiting for the rebuild at the end of exit would restore them in one frame.
+    dom.rotor.querySelectorAll(".wheel-slice").forEach(function (group) {
+      group.classList.remove("is-dimmed", "is-winner");
+    });
+    var settleFrom = state.rotation;
+    var offset = normalizeAngle(settleFrom);
+    var settleTo = offset > 180 ? settleFrom + (360 - offset) : settleFrom - offset;
+    document.body.classList.add("is-settling");
+    await animateValue(0, 1, EXIT_SETTLE_MS, easeOutCubic, function (value) {
+      setRotation(settleFrom + (settleTo - settleFrom) * value);
+    });
 
     state.phase = "setup";
     state.rotation = 0;
@@ -3764,8 +3746,8 @@
   }
 
   // Opt-in lite rendering for weak GPUs: ?perf=lite strips the heaviest decorative effects.
-  // Off by default, and separate from prefers-reduced-motion, which stays an accessibility
-  // setting rather than a performance one.
+  // Off by default. The OS reduced-motion setting is deliberately not consulted anywhere:
+  // the spin is the point of the page, so it always plays in full.
   if (/(?:^|[?&])perf=lite(?:&|$)/.test(window.location.search)) {
     document.documentElement.classList.add("perf-lite");
   }
